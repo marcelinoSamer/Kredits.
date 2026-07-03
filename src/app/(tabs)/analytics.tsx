@@ -5,6 +5,8 @@ import { Banner, SegmentedButtons, Text, useTheme } from 'react-native-paper';
 import { PieChart, LineChart } from 'react-native-gifted-charts';
 
 import { Screen } from '@/components/Screen';
+import { Card } from '@/components/Card';
+import { Divider } from '@/components/Divider';
 import { MoneyText } from '@/components/MoneyText';
 import { Eyebrow } from '@/components/Eyebrow';
 import { EmptyState } from '@/components/EmptyState';
@@ -321,14 +323,7 @@ export default function AnalyticsScreen() {
           <View style={styles.merchantsContent}>
             {data.merchants.map((m, i) => (
               <View key={m.merchant}>
-                {i > 0 && (
-                  <View
-                    style={[
-                      styles.merchantDivider,
-                      { backgroundColor: theme.colors.outlineVariant },
-                    ]}
-                  />
-                )}
+                {i > 0 && <Divider />}
                 <View style={styles.merchantRow}>
                   <Text
                     variant="bodyLarge"
@@ -349,19 +344,11 @@ export default function AnalyticsScreen() {
 }
 
 function Section({ title, children }: { title: string; children: ReactNode }) {
-  const theme = useTheme<AppTheme>();
-  const { radius, spacing } = theme.tokens;
+  const { spacing } = useTheme<AppTheme>().tokens;
   return (
     <View style={{ gap: spacing.sm }}>
       <Eyebrow>{title}</Eyebrow>
-      <View
-        style={[
-          { backgroundColor: theme.colors.surface, borderRadius: radius.lg, padding: spacing.lg },
-          theme.tokens.shadow.card,
-        ]}
-      >
-        {children}
-      </View>
+      <Card>{children}</Card>
     </View>
   );
 }

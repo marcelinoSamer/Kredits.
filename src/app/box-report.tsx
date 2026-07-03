@@ -3,9 +3,12 @@ import { StyleSheet, View, type LayoutChangeEvent } from 'react-native';
 import { Stack, useLocalSearchParams } from 'expo-router';
 import { Text, useTheme } from 'react-native-paper';
 import { BarChart } from 'react-native-gifted-charts';
-import { MaterialCommunityIcons } from '@expo/vector-icons';
 
 import { Screen } from '@/components/Screen';
+import { Card } from '@/components/Card';
+import { IconBadge } from '@/components/IconBadge';
+import { Divider } from '@/components/Divider';
+import { AppText } from '@/components/AppText';
 import { MoneyText } from '@/components/MoneyText';
 import { Eyebrow } from '@/components/Eyebrow';
 import { t } from '@/i18n';
@@ -100,30 +103,29 @@ export default function BoxReportScreen() {
       <Stack.Screen options={{ title: box.name }} />
 
       {/* Verdict banner */}
-      <View
-        style={[
-          styles.verdict,
-          { backgroundColor: theme.colors.surface, borderRadius: radius.lg, padding: spacing.xl },
-          theme.tokens.shadow.card,
-        ]}
-      >
+      <Card padding="xl">
         {running && (
-          <Text variant="bodySmall" style={{ color: theme.colors.onSurfaceVariant, marginBottom: 8 }}>
+          <AppText role="muted" variant="bodySmall" style={{ marginBottom: 8 }}>
             {t('boxes.reportSoFar')}
-          </Text>
+          </AppText>
         )}
         <View style={styles.verdictHead}>
-          <View style={[styles.verdictIcon, { backgroundColor: theme.colors.surfaceVariant, borderRadius: radius.pill }]}>
-            <MaterialCommunityIcons name={verdict.icon as never} size={28} color={verdictColor} />
-          </View>
+          <IconBadge
+            icon={verdict.icon}
+            variant="soft"
+            color={verdictColor}
+            size={52}
+            radius={radius.pill}
+            iconSize={28}
+          />
           <Text variant="titleMedium" style={{ color: verdictColor, flex: 1 }}>
             {t(verdict.text)}
           </Text>
         </View>
         <View style={[styles.deltaLine, { marginTop: spacing.md }]}>
-          <Text variant="bodyMedium" style={{ color: theme.colors.onSurfaceVariant }}>
+          <AppText role="muted" variant="bodyMedium">
             {saved ? t('boxes.underBy', { amount: '' }).trim() : t('boxes.overBy', { amount: '' }).trim()}{' '}
-          </Text>
+          </AppText>
           <MoneyText
             value={Math.abs(report.delta)}
             currency={currency}
@@ -131,7 +133,7 @@ export default function BoxReportScreen() {
             style={{ color: saved ? theme.semantic.positive : theme.semantic.negative }}
           />
         </View>
-      </View>
+      </Card>
 
       {/* Key stats */}
       <View style={styles.statGrid}>
@@ -184,10 +186,10 @@ export default function BoxReportScreen() {
       {(report.preEventSpent > 0 || report.postEventSpent > 0) && (
         <Section title={t('boxes.report')}>
           {report.preEventSpent > 0 && (
-            <BreakdownRow label={t('boxes.beforeEvent')} total={report.preEventSpent} share={null} currency={currency} />
+            <BreakdownRow label={t('boxes.beforeEvent')} total={report.preEventSpent} share={null} currency={currency} first />
           )}
           {report.postEventSpent > 0 && (
-            <BreakdownRow label={t('boxes.afterEvent')} total={report.postEventSpent} share={null} currency={currency} />
+            <BreakdownRow label={t('boxes.afterEvent')} total={report.postEventSpent} share={null} currency={currency} first={report.preEventSpent <= 0} />
           )}
         </Section>
       )}
@@ -229,18 +231,11 @@ export default function BoxReportScreen() {
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   const theme = useTheme<AppTheme>();
-  const { radius, spacing } = theme.tokens;
+  const { spacing } = theme.tokens;
   return (
     <View style={{ gap: spacing.sm }}>
       <Eyebrow>{title}</Eyebrow>
-      <View
-        style={[
-          { backgroundColor: theme.colors.surface, borderRadius: radius.lg, padding: spacing.lg },
-          theme.tokens.shadow.card,
-        ]}
-      >
-        {children}
-      </View>
+      <Card>{children}</Card>
     </View>
   );
 }
@@ -257,15 +252,8 @@ function StatCard({
   tone?: 'negative';
 }) {
   const theme = useTheme<AppTheme>();
-  const { radius, spacing } = theme.tokens;
   return (
-    <View
-      style={[
-        styles.statCard,
-        { backgroundColor: theme.colors.surface, borderRadius: radius.lg, padding: spacing.lg },
-        theme.tokens.shadow.card,
-      ]}
-    >
+    <Card style={styles.statCard}>
       <Eyebrow>{label}</Eyebrow>
       <MoneyText
         value={value}
@@ -273,7 +261,7 @@ function StatCard({
         variant="titleLarge"
         style={tone === 'negative' ? { color: theme.semantic.negative } : undefined}
       />
-    </View>
+    </Card>
   );
 }
 
@@ -315,18 +303,17 @@ function BreakdownRow({
   currency: string;
   first?: boolean;
 }) {
-  const theme = useTheme<AppTheme>();
   return (
     <View>
-      {!first && <View style={[styles.rowDivider, { backgroundColor: theme.colors.outlineVariant }]} />}
+      {!first && <Divider />}
       <View style={styles.breakdownRow}>
-        <Text variant="bodyLarge" numberOfLines={1} style={{ flex: 1, color: theme.colors.onSurface }}>
+        <AppText role="body" variant="bodyLarge" numberOfLines={1} style={styles.breakdownLabel}>
           {label}
-        </Text>
+        </AppText>
         {share != null && (
-          <Text variant="bodySmall" style={{ color: theme.colors.onSurfaceVariant }}>
+          <AppText role="muted" variant="bodySmall">
             {Math.round(share)}%
-          </Text>
+          </AppText>
         )}
         <MoneyText value={total} currency={currency} variant="titleSmall" />
       </View>
@@ -335,14 +322,12 @@ function BreakdownRow({
 }
 
 const styles = StyleSheet.create({
-  verdict: {},
   verdictHead: { flexDirection: 'row', alignItems: 'center', gap: 14 },
-  verdictIcon: { width: 52, height: 52, alignItems: 'center', justifyContent: 'center' },
   deltaLine: { flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap' },
   statGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 12 },
   statCard: { flexGrow: 1, flexBasis: '46%', gap: 4 },
   paceRow: { flexDirection: 'row', justifyContent: 'space-between', gap: 12, paddingTop: 12 },
   pace: { gap: 2, flex: 1 },
   breakdownRow: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 12 },
-  rowDivider: { height: StyleSheet.hairlineWidth },
+  breakdownLabel: { flex: 1 },
 });

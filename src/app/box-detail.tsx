@@ -1,9 +1,13 @@
 import { StyleSheet, View, Pressable, Alert } from 'react-native';
 import { Stack, router, useLocalSearchParams } from 'expo-router';
-import { Button, ProgressBar, Text, useTheme } from 'react-native-paper';
+import { Button, ProgressBar, useTheme } from 'react-native-paper';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 
 import { Screen } from '@/components/Screen';
+import { Card } from '@/components/Card';
+import { IconBadge } from '@/components/IconBadge';
+import { Divider } from '@/components/Divider';
+import { AppText } from '@/components/AppText';
 import { MoneyText } from '@/components/MoneyText';
 import { Eyebrow } from '@/components/Eyebrow';
 import { TransactionRow } from '@/components/TransactionRow';
@@ -22,7 +26,7 @@ const DAY = 86_400_000;
 export default function BoxDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const theme = useTheme<AppTheme>();
-  const { spacing, radius } = theme.tokens;
+  const { spacing } = theme.tokens;
 
   const { data } = useAsyncData(async () => {
     if (!id) return null;
@@ -112,25 +116,19 @@ export default function BoxDetailScreen() {
       />
 
       {/* Vault-style panel: the in-box figure over an accent rule. */}
-      <View
-        style={[
-          styles.hero,
-          { backgroundColor: theme.colors.surface, borderRadius: radius.lg, padding: spacing.xl },
-          theme.tokens.shadow.card,
-        ]}
-      >
+      <Card padding="xl">
         <View style={styles.heroTop}>
           <Eyebrow>{t(`boxes.phase${cap(phase)}`)}</Eyebrow>
-          <Text variant="bodySmall" style={{ color: over ? theme.semantic.negative : theme.colors.onSurfaceVariant }}>
+          <AppText role="muted" style={over ? { color: theme.semantic.negative } : null}>
             {statusLine}
-          </Text>
+          </AppText>
         </View>
         <Eyebrow>{t('boxes.inBox')}</Eyebrow>
         <MoneyText value={p.inBox} currency={box.currency} variant="displaySmall" style={styles.heroFigure} />
         <View style={[styles.rule, { backgroundColor: accent }]} />
-        <Text variant="bodySmall" style={{ color: theme.colors.onSurfaceVariant }}>
+        <AppText role="muted">
           {formatDate(box.starts_at)} — {formatDate(box.ends_at)}
-        </Text>
+        </AppText>
 
         <ProgressBar
           progress={Math.min(1, barValue / 100)}
@@ -142,7 +140,7 @@ export default function BoxDetailScreen() {
           <Stat label={t('boxes.saved')} value={box.funded} currency={box.currency} />
           <Stat label={t('boxes.budget')} value={box.budget_amount} currency={box.currency} />
         </View>
-      </View>
+      </Card>
 
       {/* Actions */}
       <View style={styles.actions}>
@@ -197,7 +195,7 @@ export default function BoxDetailScreen() {
       {transfers.length > 0 && (
         <View style={{ gap: spacing.sm }}>
           <Eyebrow>{t('boxes.moneyIn')}</Eyebrow>
-          <View style={[styles.listCard, { backgroundColor: theme.colors.surface, borderRadius: radius.lg }, theme.tokens.shadow.card]}>
+          <Card list>
             {transfers.map((tr, i) => {
               const into = tr.to_account_id === box.account_id;
               const otherName = into ? tr.from_name : tr.to_name;
@@ -205,30 +203,30 @@ export default function BoxDetailScreen() {
               const otherCurrency = into ? tr.from_currency : tr.to_currency;
               return (
                 <View key={tr.id}>
-                  {i > 0 && <View style={[styles.divider, { backgroundColor: theme.colors.outlineVariant }]} />}
+                  {i > 0 && <Divider inset={68} />}
                   <View style={[styles.moveRow, { paddingVertical: spacing.md, paddingHorizontal: spacing.lg }]}>
-                    <View style={[styles.moveIcon, { backgroundColor: theme.colors.surfaceVariant, borderRadius: radius.md }]}>
-                      <MaterialCommunityIcons
-                        name={into ? 'arrow-bottom-left' : 'arrow-top-right'}
-                        size={18}
-                        color={into ? theme.semantic.positive : theme.semantic.negative}
-                      />
-                    </View>
+                    <IconBadge
+                      icon={into ? 'arrow-bottom-left' : 'arrow-top-right'}
+                      variant="soft"
+                      color={into ? theme.semantic.positive : theme.semantic.negative}
+                      size={38}
+                      iconSize={18}
+                    />
                     <View style={styles.moveBody}>
-                      <Text variant="titleSmall" numberOfLines={1} style={{ color: theme.colors.onSurface }}>
+                      <AppText role="title" numberOfLines={1}>
                         {into ? t('boxes.fundedEntry', { name: otherName }) : t('boxes.returnedEntry', { name: otherName })}
-                      </Text>
-                      <Text variant="bodySmall" style={{ color: theme.colors.onSurfaceVariant }}>
+                      </AppText>
+                      <AppText role="muted">
                         {formatDate(tr.occurred_at)}
                         {otherCurrency !== box.currency ? `  ·  ${otherCurrency}` : ''}
-                      </Text>
+                      </AppText>
                     </View>
                     <MoneyText value={into ? amount : -amount} currency={box.currency} colorBySign signed variant="titleSmall" />
                   </View>
                 </View>
               );
             })}
-          </View>
+          </Card>
         </View>
       )}
 
@@ -236,21 +234,21 @@ export default function BoxDetailScreen() {
       <View style={{ gap: spacing.sm }}>
         <Eyebrow>{t('boxes.spending')}</Eyebrow>
         {txs.length === 0 ? (
-          <Text variant="bodyMedium" style={{ color: theme.colors.onSurfaceVariant, paddingHorizontal: spacing.xs }}>
+          <AppText role="muted" variant="bodyMedium" style={{ paddingHorizontal: spacing.xs }}>
             {t('boxes.noSpending')}
-          </Text>
+          </AppText>
         ) : (
-          <View style={[styles.listCard, { backgroundColor: theme.colors.surface, borderRadius: radius.lg }, theme.tokens.shadow.card]}>
+          <Card list>
             {txs.map((tx, i) => (
               <View key={tx.id}>
-                {i > 0 && <View style={[styles.divider, { backgroundColor: theme.colors.outlineVariant }]} />}
+                {i > 0 && <Divider inset={68} />}
                 <TransactionRow
                   tx={tx}
                   onPress={() => router.push({ pathname: '/transaction-edit', params: { id: tx.id } })}
                 />
               </View>
             ))}
-          </View>
+          </Card>
         )}
       </View>
     </Screen>
@@ -258,7 +256,6 @@ export default function BoxDetailScreen() {
 }
 
 function Stat({ label, value, currency }: { label: string; value: number; currency: string }) {
-  const theme = useTheme<AppTheme>();
   return (
     <View style={styles.stat}>
       <Eyebrow>{label}</Eyebrow>
@@ -272,16 +269,12 @@ function cap(s: string): string {
 }
 
 const styles = StyleSheet.create({
-  hero: {},
   heroTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 },
   heroFigure: { fontSize: 40, lineHeight: 46, letterSpacing: -0.5, marginTop: 2 },
   rule: { width: 48, height: 2, borderRadius: 1, marginVertical: 8 },
   statRow: { flexDirection: 'row', justifyContent: 'space-between', marginTop: 16, gap: 12 },
   stat: { gap: 2, flex: 1 },
   actions: { gap: 8 },
-  listCard: { overflow: 'hidden' },
-  divider: { height: StyleSheet.hairlineWidth, marginLeft: 68 },
   moveRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
-  moveIcon: { width: 38, height: 38, alignItems: 'center', justifyContent: 'center' },
   moveBody: { flex: 1, gap: 2 },
 });
