@@ -1,9 +1,13 @@
-import { router } from 'expo-router';
-import { StyleSheet, View } from 'react-native';
-import { List, Text, useTheme } from 'react-native-paper';
+import { Stack, router } from 'expo-router';
+import { StyleSheet, View, Pressable } from 'react-native';
+import { useTheme } from 'react-native-paper';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 
 import { Screen } from '@/components/Screen';
+import { Card } from '@/components/Card';
+import { Divider } from '@/components/Divider';
+import { IconBadge } from '@/components/IconBadge';
+import { AppText } from '@/components/AppText';
 import { Eyebrow } from '@/components/Eyebrow';
 import { t } from '@/i18n';
 import { useSettings } from '@/state/settings';
@@ -21,8 +25,9 @@ interface Group {
   rows: Row[];
 }
 
-export default function MoreScreen() {
+export default function ManageScreen() {
   const theme = useTheme<AppTheme>();
+  const { spacing } = theme.tokens;
   const displayCurrency = useSettings((s) => s.displayCurrency);
   const locale = useSettings((s) => s.locale);
   const localeLabel = locale === 'ar' ? 'العربية' : 'English';
@@ -36,29 +41,6 @@ export default function MoreScreen() {
           description: `${displayCurrency} · ${localeLabel}`,
           icon: 'account-cog-outline',
           route: '/settings',
-        },
-      ],
-    },
-    {
-      title: t('more.sectionPlanning'),
-      rows: [
-        {
-          title: t('budgets.title'),
-          description: t('more.budgetsDesc'),
-          icon: 'chart-donut',
-          route: '/budgets',
-        },
-        {
-          title: t('goals.title'),
-          description: t('more.goalsDesc'),
-          icon: 'target',
-          route: '/goals',
-        },
-        {
-          title: t('boxes.title'),
-          description: t('more.boxesDesc'),
-          icon: 'party-popper',
-          route: '/boxes',
         },
       ],
     },
@@ -83,60 +65,50 @@ export default function MoreScreen() {
 
   return (
     <Screen>
+      <Stack.Screen options={{ title: t('settings.title') }} />
+
       <View style={[styles.offlineBadge, { backgroundColor: theme.colors.surfaceVariant }]}>
         <MaterialCommunityIcons
           name="shield-lock-outline"
           size={16}
           color={theme.colors.onSurfaceVariant}
         />
-        <Text variant="labelMedium" style={{ color: theme.colors.onSurfaceVariant }}>
+        <AppText role="muted" variant="labelMedium">
           {t('more.offlineBadge')}
-        </Text>
+        </AppText>
       </View>
 
       {groups.map((group) => (
         <View key={group.title} style={styles.group}>
           <Eyebrow style={styles.groupTitle}>{group.title}</Eyebrow>
-          <View
-            style={[
-              styles.groupCard,
-              { backgroundColor: theme.colors.surface },
-              theme.tokens.shadow.card,
-            ]}
-          >
+          <Card list>
             {group.rows.map((row, i) => (
               <View key={row.title}>
-                {i > 0 && (
-                  <View
-                    style={[styles.divider, { backgroundColor: theme.colors.outlineVariant }]}
-                  />
-                )}
-                <List.Item
-                  title={row.title}
-                  description={row.description}
-                  descriptionNumberOfLines={2}
-                  left={() => (
-                    <View style={styles.iconBox}>
-                      <MaterialCommunityIcons
-                        name={row.icon as never}
-                        size={22}
-                        color={theme.colors.primary}
-                      />
-                    </View>
-                  )}
-                  right={() => (
-                    <MaterialCommunityIcons
-                      name="chevron-right"
-                      size={22}
-                      color={theme.colors.onSurfaceVariant}
-                      style={styles.chevron}
-                    />
-                  )}
+                {i > 0 && <Divider inset={64} />}
+                <Pressable
                   onPress={() => router.push(row.route as never)}
-                />
+                  style={({ pressed }) => [
+                    styles.row,
+                    { paddingVertical: spacing.md, paddingHorizontal: spacing.md, gap: spacing.md },
+                    pressed && { backgroundColor: theme.colors.surfaceVariant },
+                  ]}
+                >
+                  <IconBadge icon={row.icon} variant="ghost" color={theme.colors.primary} iconSize={22} />
+                  <View style={styles.rowBody}>
+                    <AppText role="title">{row.title}</AppText>
+                    <AppText role="muted" numberOfLines={2}>
+                      {row.description}
+                    </AppText>
+                  </View>
+                  <MaterialCommunityIcons
+                    name="chevron-right"
+                    size={22}
+                    color={theme.colors.onSurfaceVariant}
+                  />
+                </Pressable>
               </View>
             ))}
-          </View>
+          </Card>
         </View>
       ))}
     </Screen>
@@ -155,8 +127,6 @@ const styles = StyleSheet.create({
   },
   group: { gap: 10 },
   groupTitle: { paddingHorizontal: 4 },
-  groupCard: { borderRadius: 20, overflow: 'hidden' },
-  divider: { height: StyleSheet.hairlineWidth, marginLeft: 64 },
-  iconBox: { width: 40, alignItems: 'center', justifyContent: 'center' },
-  chevron: { alignSelf: 'center' },
+  row: { flexDirection: 'row', alignItems: 'center' },
+  rowBody: { flex: 1, gap: 2 },
 });

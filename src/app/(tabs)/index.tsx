@@ -7,6 +7,10 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { MoneyText } from '@/components/MoneyText';
 import { Eyebrow } from '@/components/Eyebrow';
+import { AppText } from '@/components/AppText';
+import { Card } from '@/components/Card';
+import { IconBadge } from '@/components/IconBadge';
+import { Divider } from '@/components/Divider';
 import { TransactionRow } from '@/components/TransactionRow';
 import { EmptyState } from '@/components/EmptyState';
 import { t } from '@/i18n';
@@ -63,13 +67,26 @@ export default function DashboardScreen() {
       >
         {/* Vault panel — net worth as a gold figure on an engraved gold line. */}
         <View style={{ paddingHorizontal: spacing.xl, gap: spacing.sm }}>
-          <View style={styles.offlineRow}>
-            <MaterialCommunityIcons
-              name="shield-lock-outline"
-              size={13}
-              color={theme.colors.onSurfaceVariant}
-            />
-            <Eyebrow>{t('more.offlineBadge')}</Eyebrow>
+          <View style={styles.topRow}>
+            <View style={styles.offlineRow}>
+              <MaterialCommunityIcons
+                name="shield-lock-outline"
+                size={13}
+                color={theme.colors.onSurfaceVariant}
+              />
+              <Eyebrow>{t('more.offlineBadge')}</Eyebrow>
+            </View>
+            <Pressable
+              onPress={() => router.push('/manage')}
+              hitSlop={10}
+              style={({ pressed }) => (pressed ? { opacity: 0.6 } : null)}
+            >
+              <MaterialCommunityIcons
+                name="cog-outline"
+                size={22}
+                color={theme.colors.onSurfaceVariant}
+              />
+            </Pressable>
           </View>
 
           <View style={{ gap: spacing.xs, marginTop: spacing.sm }}>
@@ -104,9 +121,9 @@ export default function DashboardScreen() {
               ]}
             >
               <MaterialCommunityIcons name="alert-outline" size={15} color={theme.semantic.negative} />
-              <Text variant="bodySmall" style={{ color: theme.colors.onSurfaceVariant }}>
+              <AppText role="muted" variant="bodySmall">
                 {t('dashboard.missingRates')}
-              </Text>
+              </AppText>
             </Pressable>
           )}
         </View>
@@ -114,13 +131,7 @@ export default function DashboardScreen() {
         {/* This month */}
         <View style={{ paddingHorizontal: spacing.xl, gap: spacing.sm }}>
           <Eyebrow>{t('dashboard.thisMonth')}</Eyebrow>
-          <View
-            style={[
-              styles.monthCard,
-              { backgroundColor: theme.colors.surface, borderRadius: radius.lg, padding: spacing.lg },
-              theme.tokens.shadow.card,
-            ]}
-          >
+          <Card style={styles.monthCard}>
             <View style={styles.monthCol}>
               <Eyebrow>{t('dashboard.income')}</Eyebrow>
               <MoneyText
@@ -130,7 +141,7 @@ export default function DashboardScreen() {
                 style={{ color: theme.semantic.income }}
               />
             </View>
-            <View style={[styles.vRule, { backgroundColor: theme.colors.outlineVariant }]} />
+            <Divider vertical style={{ marginVertical: 4 }} />
             <View style={styles.monthCol}>
               <Eyebrow>{t('dashboard.expenses')}</Eyebrow>
               <MoneyText
@@ -140,7 +151,7 @@ export default function DashboardScreen() {
                 style={{ color: theme.semantic.expense }}
               />
             </View>
-          </View>
+          </Card>
         </View>
 
         {/* Quick actions */}
@@ -171,7 +182,7 @@ export default function DashboardScreen() {
           </View>
         )}
 
-        {/* Containers — horizontal carousel breaks the vertical card stack. */}
+        {/* Balances — horizontal carousel breaks the vertical card stack. */}
         {pf && pf.accounts.length > 0 && (
           <View style={{ gap: spacing.sm }}>
             <Eyebrow style={{ paddingHorizontal: spacing.xl }}>{t('dashboard.balances')}</Eyebrow>
@@ -181,33 +192,20 @@ export default function DashboardScreen() {
               contentContainerStyle={{ paddingHorizontal: spacing.xl, gap: spacing.md }}
             >
               {pf.accounts.map((a) => (
-                <Pressable
+                <Card
                   key={a.id}
                   onPress={() => router.push({ pathname: '/account-edit', params: { id: a.id } })}
-                  style={[
-                    styles.balCard,
-                    { backgroundColor: theme.colors.surface, borderRadius: radius.lg, padding: spacing.lg },
-                    theme.tokens.shadow.card,
-                  ]}
+                  style={styles.balCard}
                 >
-                  <View
-                    style={[
-                      styles.balChip,
-                      { backgroundColor: a.color ?? theme.colors.primary, borderRadius: radius.md },
-                    ]}
-                  >
-                    <MaterialCommunityIcons name={(a.icon ?? 'wallet') as never} size={20} color="#fff" />
-                  </View>
+                  <IconBadge icon={a.icon ?? 'wallet'} color={a.color ?? theme.colors.primary} size={40} />
                   <View style={{ gap: 2 }}>
-                    <Text variant="titleSmall" numberOfLines={1} style={{ color: theme.colors.onSurface }}>
+                    <AppText role="title" numberOfLines={1}>
                       {a.name}
-                    </Text>
-                    <Text variant="bodySmall" style={{ color: theme.colors.onSurfaceVariant }}>
-                      {a.currency}
-                    </Text>
+                    </AppText>
+                    <AppText role="muted">{a.currency}</AppText>
                   </View>
                   <MoneyText value={a.balance} currency={a.currency} variant="titleMedium" />
-                </Pressable>
+                </Card>
               ))}
             </ScrollView>
           </View>
@@ -217,25 +215,17 @@ export default function DashboardScreen() {
         {extra && extra.recent.length > 0 && (
           <View style={{ paddingHorizontal: spacing.xl, gap: spacing.sm }}>
             <Eyebrow>{t('dashboard.recent')}</Eyebrow>
-            <View
-              style={[
-                styles.listCard,
-                { backgroundColor: theme.colors.surface, borderRadius: radius.lg },
-                theme.tokens.shadow.card,
-              ]}
-            >
+            <Card list>
               {extra.recent.map((tx, i) => (
                 <View key={tx.id}>
-                  {i > 0 && (
-                    <View style={[styles.hairline, { backgroundColor: theme.colors.outlineVariant }]} />
-                  )}
+                  {i > 0 && <Divider inset={76} />}
                   <TransactionRow
                     tx={tx}
                     onPress={() => router.push({ pathname: '/transaction-edit', params: { id: tx.id } })}
                   />
                 </View>
               ))}
-            </View>
+            </Card>
           </View>
         )}
       </ScrollView>
@@ -255,36 +245,22 @@ function ActionTile({
   onPress: () => void;
 }) {
   const theme = useTheme<AppTheme>();
-  const { spacing, radius } = theme.tokens;
+  const { spacing } = theme.tokens;
   return (
-    <Pressable
-      onPress={onPress}
-      style={({ pressed }) => [
-        styles.tile,
-        {
-          backgroundColor: theme.colors.surface,
-          borderRadius: radius.lg,
-          paddingVertical: spacing.md,
-          gap: spacing.sm,
-          opacity: pressed ? 0.7 : 1,
-        },
-        theme.tokens.shadow.card,
-      ]}
-    >
-      <View
-        style={[styles.tileChip, { backgroundColor: theme.colors.surfaceVariant, borderRadius: radius.md }]}
-      >
-        <MaterialCommunityIcons name={icon as never} size={22} color={tint} />
+    <Card onPress={onPress} padding="none" style={styles.tile}>
+      <View style={{ alignItems: 'center', paddingVertical: spacing.md, gap: spacing.sm }}>
+        <IconBadge icon={icon} variant="soft" color={tint} size={44} iconSize={22} />
+        <Text variant="labelMedium" style={{ color: theme.colors.onSurface }}>
+          {label}
+        </Text>
       </View>
-      <Text variant="labelMedium" style={{ color: theme.colors.onSurface }}>
-        {label}
-      </Text>
-    </Pressable>
+    </Card>
   );
 }
 
 const styles = StyleSheet.create({
   flex: { flex: 1 },
+  topRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   offlineRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   heroFigure: { fontSize: 40, lineHeight: 46, letterSpacing: -0.5 },
   goldRule: { width: 48, height: 2, borderRadius: 1, marginTop: 6 },
@@ -299,12 +275,7 @@ const styles = StyleSheet.create({
   },
   monthCard: { flexDirection: 'row', alignItems: 'center' },
   monthCol: { flex: 1, alignItems: 'center', gap: 4 },
-  vRule: { width: StyleSheet.hairlineWidth, alignSelf: 'stretch', marginVertical: 4 },
   actionRow: { flexDirection: 'row' },
-  tile: { flex: 1, alignItems: 'center' },
-  tileChip: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center' },
+  tile: { flex: 1 },
   balCard: { width: 170, gap: 12 },
-  balChip: { width: 40, height: 40, alignItems: 'center', justifyContent: 'center' },
-  listCard: { overflow: 'hidden' },
-  hairline: { height: StyleSheet.hairlineWidth, marginLeft: 76 },
 });

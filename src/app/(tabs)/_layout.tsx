@@ -1,4 +1,4 @@
-import { Tabs } from 'expo-router';
+import { Tabs, router } from 'expo-router';
 import { StyleSheet, View, type ColorValue } from 'react-native';
 import { useTheme } from 'react-native-paper';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
@@ -23,6 +23,13 @@ export default function TabsLayout() {
         <MaterialCommunityIcons name={name as never} color={color as string} size={size - 2} />
       </View>
     );
+
+  // The center "+" is a raised gold coin — the one place to create anything.
+  const renderAddButton = () => (
+    <View style={[styles.addButton, { backgroundColor: theme.semantic.gold }]}>
+      <MaterialCommunityIcons name="plus" color="#1A1205" size={26} />
+    </View>
+  );
 
   return (
     <Tabs
@@ -57,20 +64,28 @@ export default function TabsLayout() {
       />
       <Tabs.Screen
         name="transactions"
-        options={{ title: t('tabs.transactions'), tabBarIcon: renderIcon('swap-vertical') }}
+        options={{ title: t('tabs.transactions'), tabBarIcon: renderIcon('receipt-text-outline') }}
+      />
+      <Tabs.Screen
+        name="add"
+        options={{ title: '', tabBarIcon: renderAddButton, tabBarLabel: () => null }}
+        listeners={{
+          tabPress: (e) => {
+            e.preventDefault();
+            router.push('/quick-add');
+          },
+        }}
+      />
+      <Tabs.Screen
+        name="longgame"
+        options={{ title: t('tabs.longGame'), tabBarIcon: renderIcon('flag-checkered') }}
       />
       <Tabs.Screen
         name="accounts"
-        options={{ title: t('tabs.accounts'), tabBarIcon: renderIcon('wallet') }}
+        options={{ title: t('tabs.accounts'), tabBarIcon: renderIcon('treasure-chest') }}
       />
-      <Tabs.Screen
-        name="analytics"
-        options={{ title: t('tabs.analytics'), tabBarIcon: renderIcon('chart-arc') }}
-      />
-      <Tabs.Screen
-        name="more"
-        options={{ title: t('tabs.more'), tabBarIcon: renderIcon('dots-horizontal') }}
-      />
+      {/* Reachable route with no tab button — opened from Wealth's Insights link. */}
+      <Tabs.Screen name="analytics" options={{ href: null, title: t('tabs.analytics') }} />
     </Tabs>
   );
 }
@@ -82,5 +97,13 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     borderRadius: tokens.radius.pill,
+  },
+  addButton: {
+    width: 46,
+    height: 46,
+    borderRadius: tokens.radius.pill,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: -2,
   },
 });

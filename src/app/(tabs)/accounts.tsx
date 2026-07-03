@@ -1,11 +1,15 @@
 import { useMemo, useState } from 'react';
 import { Pressable, RefreshControl, ScrollView, StyleSheet, View } from 'react-native';
 import { router } from 'expo-router';
-import { FAB, SegmentedButtons, Text, useTheme } from 'react-native-paper';
+import { FAB, SegmentedButtons, useTheme } from 'react-native-paper';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 
 import { MoneyText } from '@/components/MoneyText';
 import { Eyebrow } from '@/components/Eyebrow';
+import { AppText } from '@/components/AppText';
+import { Card } from '@/components/Card';
+import { IconBadge } from '@/components/IconBadge';
+import { Divider } from '@/components/Divider';
 import { EmptyState } from '@/components/EmptyState';
 import { t } from '@/i18n';
 import { assetTypeLabel, accountTypeLabel } from '@/ui/labels';
@@ -88,15 +92,29 @@ export default function AccountsScreen() {
           </View>
         )}
 
+        {/* Insights — the deep analytics screen, folded into Wealth. */}
+        <Pressable
+          onPress={() => router.push('/analytics')}
+          style={({ pressed }) => [
+            styles.insights,
+            { backgroundColor: theme.colors.surfaceVariant, borderRadius: radius.pill },
+            pressed && { opacity: 0.7 },
+          ]}
+        >
+          <MaterialCommunityIcons name="chart-arc" size={16} color={theme.colors.primary} />
+          <AppText role="body" variant="labelLarge">
+            {t('analytics.title')}
+          </AppText>
+          <MaterialCommunityIcons
+            name="chevron-right"
+            size={18}
+            color={theme.colors.onSurfaceVariant}
+          />
+        </Pressable>
+
         {showingContainers &&
           (containerCount > 0 ? (
-            <View
-              style={[
-                styles.listCard,
-                { backgroundColor: theme.colors.surface, borderRadius: radius.lg },
-                theme.tokens.shadow.card,
-              ]}
-            >
+            <Card list>
               {pf!.accounts.map((a, i) => (
                 <Row
                   key={a.id}
@@ -110,20 +128,14 @@ export default function AccountsScreen() {
                   onPress={() => router.push({ pathname: '/account-edit', params: { id: a.id } })}
                 />
               ))}
-            </View>
+            </Card>
           ) : (
             <EmptyState icon="wallet-outline" text={t('accounts.noContainers')} />
           ))}
 
         {!showingContainers &&
           (assetCount > 0 ? (
-            <View
-              style={[
-                styles.listCard,
-                { backgroundColor: theme.colors.surface, borderRadius: radius.lg },
-                theme.tokens.shadow.card,
-              ]}
-            >
+            <Card list>
               {pf!.assets.map((a, i) => (
                 <Row
                   key={a.id}
@@ -137,7 +149,7 @@ export default function AccountsScreen() {
                   onPress={() => router.push({ pathname: '/asset-edit', params: { id: a.id } })}
                 />
               ))}
-            </View>
+            </Card>
           ) : (
             <EmptyState icon="gold" text={t('accounts.noAssets')} />
           ))}
@@ -173,10 +185,10 @@ function Row({
   onPress: () => void;
 }) {
   const theme = useTheme<AppTheme>();
-  const { spacing, radius } = theme.tokens;
+  const { spacing } = theme.tokens;
   return (
     <View>
-      {!first && <View style={[styles.divider, { backgroundColor: theme.colors.outlineVariant }]} />}
+      {!first && <Divider inset={76} />}
       <Pressable
         onPress={onPress}
         style={({ pressed }) => [
@@ -185,16 +197,14 @@ function Row({
           pressed && { backgroundColor: theme.colors.surfaceVariant },
         ]}
       >
-        <View style={[styles.chip, { backgroundColor: chipColor, borderRadius: radius.md }]}>
-          <MaterialCommunityIcons name={icon as never} size={20} color="#fff" />
-        </View>
+        <IconBadge icon={icon} color={chipColor} />
         <View style={styles.body}>
-          <Text variant="titleSmall" numberOfLines={1} style={{ color: theme.colors.onSurface }}>
+          <AppText role="title" numberOfLines={1}>
             {title}
-          </Text>
-          <Text variant="bodySmall" numberOfLines={1} style={{ color: theme.colors.onSurfaceVariant }}>
+          </AppText>
+          <AppText role="muted" numberOfLines={1}>
             {subtitle}
-          </Text>
+          </AppText>
         </View>
         <MoneyText value={amount} currency={currency} variant="titleMedium" />
       </Pressable>
@@ -207,10 +217,15 @@ const styles = StyleSheet.create({
   heroFigure: { fontSize: 40, lineHeight: 46, letterSpacing: -0.5 },
   rule: { width: 48, height: 2, borderRadius: 1, marginTop: 6 },
   metaRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: 12 },
-  listCard: { overflow: 'hidden' },
+  insights: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    alignSelf: 'flex-start',
+    gap: 8,
+    paddingVertical: 8,
+    paddingHorizontal: 14,
+  },
   row: { flexDirection: 'row', alignItems: 'center' },
-  chip: { width: 42, height: 42, alignItems: 'center', justifyContent: 'center' },
   body: { flex: 1, gap: 2 },
-  divider: { height: StyleSheet.hairlineWidth, marginLeft: 76 },
   fab: { position: 'absolute', right: 16, bottom: 16 },
 });

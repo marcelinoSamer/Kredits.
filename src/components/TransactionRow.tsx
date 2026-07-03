@@ -1,8 +1,9 @@
 import { Pressable, StyleSheet, View } from 'react-native';
-import { Text, useTheme } from 'react-native-paper';
-import { MaterialCommunityIcons } from '@expo/vector-icons';
+import { useTheme } from 'react-native-paper';
 
 import { MoneyText } from './MoneyText';
+import { AppText } from './AppText';
+import { IconBadge } from './IconBadge';
 import { categoryLabel } from '@/ui/labels';
 import { formatDate } from '@/ui/date';
 import { t } from '@/i18n';
@@ -16,7 +17,7 @@ interface Props {
 
 export function TransactionRow({ tx, onPress }: Props) {
   const theme = useTheme<AppTheme>();
-  const { spacing, radius } = theme.tokens;
+  const { spacing } = theme.tokens;
   const isExpense = tx.kind === 'expense';
 
   const title =
@@ -30,9 +31,7 @@ export function TransactionRow({ tx, onPress }: Props) {
   const meta = [catName, tx.account_name, formatDate(tx.occurred_at)].filter(Boolean).join('  ·  ');
 
   const icon = tx.category_icon || (isExpense ? 'arrow-top-right' : 'arrow-bottom-left');
-  const hasColor = !!tx.category_color;
-  const chipBg = tx.category_color ?? theme.colors.surfaceVariant;
-  const iconColor = hasColor ? '#fff' : isExpense ? theme.semantic.negative : theme.semantic.positive;
+  const semanticTint = isExpense ? theme.semantic.negative : theme.semantic.positive;
 
   return (
     <Pressable
@@ -43,17 +42,19 @@ export function TransactionRow({ tx, onPress }: Props) {
         pressed && { backgroundColor: theme.colors.surfaceVariant },
       ]}
     >
-      <View style={[styles.chip, { backgroundColor: chipBg, borderRadius: radius.md }]}>
-        <MaterialCommunityIcons name={icon as never} size={20} color={iconColor} />
-      </View>
+      {tx.category_color ? (
+        <IconBadge icon={icon} color={tx.category_color} />
+      ) : (
+        <IconBadge icon={icon} variant="soft" color={semanticTint} />
+      )}
       <View style={styles.body}>
-        <Text variant="titleSmall" numberOfLines={1} style={{ color: theme.colors.onSurface }}>
+        <AppText role="title" numberOfLines={1}>
           {title}
-        </Text>
+        </AppText>
         {!!meta && (
-          <Text variant="bodySmall" numberOfLines={1} style={{ color: theme.colors.onSurfaceVariant }}>
+          <AppText role="muted" numberOfLines={1}>
             {meta}
-          </Text>
+          </AppText>
         )}
       </View>
       <MoneyText
@@ -69,6 +70,5 @@ export function TransactionRow({ tx, onPress }: Props) {
 
 const styles = StyleSheet.create({
   row: { flexDirection: 'row', alignItems: 'center' },
-  chip: { width: 42, height: 42, alignItems: 'center', justifyContent: 'center' },
   body: { flex: 1, gap: 2 },
 });

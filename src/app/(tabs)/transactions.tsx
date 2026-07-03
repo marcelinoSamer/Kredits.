@@ -1,10 +1,13 @@
 import { useMemo, useState } from 'react';
 import { RefreshControl, SectionList, StyleSheet, View } from 'react-native';
 import { router } from 'expo-router';
-import { FAB, SegmentedButtons, Searchbar, Text, useTheme } from 'react-native-paper';
+import { FAB, SegmentedButtons, Searchbar, useTheme } from 'react-native-paper';
 
 import { MoneyText } from '@/components/MoneyText';
 import { Eyebrow } from '@/components/Eyebrow';
+import { AppText } from '@/components/AppText';
+import { Card } from '@/components/Card';
+import { Divider } from '@/components/Divider';
 import { TransactionRow } from '@/components/TransactionRow';
 import { EmptyState } from '@/components/EmptyState';
 import { t } from '@/i18n';
@@ -119,13 +122,7 @@ export default function TransactionsScreen() {
           }
           ListHeaderComponent={
             summary ? (
-              <View
-                style={[
-                  styles.summaryCard,
-                  { backgroundColor: theme.colors.surface, borderRadius: radius.lg, padding: spacing.lg, marginBottom: spacing.md },
-                  theme.tokens.shadow.card,
-                ]}
-              >
+              <Card style={[styles.summaryCard, { marginBottom: spacing.md }]}>
                 <View style={styles.summaryCol}>
                   <Eyebrow>{t('dashboard.income')}</Eyebrow>
                   <MoneyText
@@ -135,7 +132,7 @@ export default function TransactionsScreen() {
                     style={{ color: theme.semantic.income }}
                   />
                 </View>
-                <View style={[styles.vRule, { backgroundColor: theme.colors.outlineVariant }]} />
+                <Divider vertical style={{ marginVertical: 4 }} />
                 <View style={styles.summaryCol}>
                   <Eyebrow>{t('dashboard.expenses')}</Eyebrow>
                   <MoneyText
@@ -145,14 +142,12 @@ export default function TransactionsScreen() {
                     style={{ color: theme.semantic.expense }}
                   />
                 </View>
-              </View>
+              </Card>
             ) : null
           }
           renderSectionHeader={({ section }) => (
             <View style={[styles.dayHeader, { backgroundColor: theme.colors.background, paddingVertical: spacing.sm }]}>
-              <Text variant="titleSmall" style={{ color: theme.colors.onSurface }}>
-                {section.title}
-              </Text>
+              <AppText role="title">{section.title}</AppText>
               <View style={styles.dayHeaderRight}>
                 <Eyebrow>{t('tx.dayNet')}</Eyebrow>
                 <MoneyText
@@ -176,9 +171,7 @@ export default function TransactionsScreen() {
                 },
               ]}
             >
-              {index > 0 && (
-                <View style={[styles.rowDivider, { backgroundColor: theme.colors.outlineVariant }]} />
-              )}
+              {index > 0 && <Divider inset={76} />}
               <TransactionRow
                 tx={item}
                 onPress={() => router.push({ pathname: '/transaction-edit', params: { id: item.id } })}
@@ -207,7 +200,6 @@ const styles = StyleSheet.create({
   emptyWrap: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   summaryCard: { flexDirection: 'row', alignItems: 'center' },
   summaryCol: { flex: 1, alignItems: 'center', gap: 4 },
-  vRule: { width: StyleSheet.hairlineWidth, alignSelf: 'stretch', marginVertical: 4 },
   dayHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -215,7 +207,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 4,
   },
   dayHeaderRight: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  rowDivider: { height: StyleSheet.hairlineWidth, marginLeft: 76 },
   sectionFooter: { height: 12 },
   fab: { position: 'absolute', right: 16, bottom: 16 },
 });
