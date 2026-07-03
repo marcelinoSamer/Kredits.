@@ -1,9 +1,9 @@
 import { useEffect, useState } from 'react';
 import { Alert } from 'react-native';
-import { Stack, router } from 'expo-router';
-import { Button, HelperText, TextInput } from 'react-native-paper';
+import { router } from 'expo-router';
+import { HelperText, TextInput } from 'react-native-paper';
 
-import { Screen } from '@/components/Screen';
+import { EditorScaffold } from '@/components/register/EditorScaffold';
 import { AmountInput } from '@/components/AmountInput';
 import { SelectField, type SelectOption } from '@/components/SelectField';
 import { DateField } from '@/components/DateField';
@@ -99,34 +99,70 @@ export default function TransferScreen() {
   };
 
   return (
-    <Screen>
-      <Stack.Screen options={{ title: t('transfer.title'), presentation: 'modal' }} />
-
-      <SelectField label={t('transfer.from')} value={fromId} onChange={(k) => { setFromId(k); recompute(fromAmount); }} options={options} />
-      <SelectField label={t('transfer.to')} value={toId} onChange={(k) => { setToId(k); recompute(fromAmount); }} options={options} />
-
-      <AmountInput label={t('transfer.fromAmount')} value={fromAmount} onChangeText={recompute} currency={from?.currency} />
+    <EditorScaffold
+      title={t('transfer.title')}
+      subtitle={from && to ? `${from.currency} → ${to.currency}` : undefined}
+      onSave={save}
+      saveDisabled={accounts.length < 2}
+      hero={
+        <AmountInput
+          label={t('transfer.fromAmount')}
+          value={fromAmount}
+          onChangeText={recompute}
+          currency={from?.currency}
+        />
+      }
+    >
+      <SelectField
+        label={t('transfer.from')}
+        value={fromId}
+        onChange={(k) => {
+          setFromId(k);
+          recompute(fromAmount);
+        }}
+        options={options}
+      />
+      <SelectField
+        label={t('transfer.to')}
+        value={toId}
+        onChange={(k) => {
+          setToId(k);
+          recompute(fromAmount);
+        }}
+        options={options}
+      />
       {!sameCurrency && (
-        <AmountInput label={t('transfer.toAmount')} value={toAmount} onChangeText={(v) => setToAmount(sanitizeDecimal(v))} currency={to?.currency} />
+        <AmountInput
+          label={t('transfer.toAmount')}
+          value={toAmount}
+          onChangeText={(v) => setToAmount(sanitizeDecimal(v))}
+          currency={to?.currency}
+        />
       )}
       {impliedRate != null && !sameCurrency && (
         <HelperText type="info" visible>
           {t('transfer.rate')}: 1 {from?.currency} = {formatNumber(impliedRate, 4)} {to?.currency}
         </HelperText>
       )}
-
-      <AmountInput label={`${t('transfer.fee')} (${from?.currency ?? ''})`} value={fee} onChangeText={setFee} currency={from?.currency} />
+      <AmountInput
+        label={`${t('transfer.fee')} (${from?.currency ?? ''})`}
+        value={fee}
+        onChangeText={setFee}
+        currency={from?.currency}
+      />
       <DateField label={t('common.date')} value={occurredAt} onChange={setOccurredAt} />
-      <TextInput mode="outlined" label={`${t('common.note')} (${t('common.optional')})`} value={note} onChangeText={setNote} multiline />
-
-      <Button mode="contained" onPress={save} style={{ marginTop: 8 }} disabled={accounts.length < 2}>
-        {t('common.save')}
-      </Button>
+      <TextInput
+        mode="outlined"
+        label={`${t('common.note')} (${t('common.optional')})`}
+        value={note}
+        onChangeText={setNote}
+        multiline
+      />
       {accounts.length < 2 && (
         <HelperText type="error" visible>
           {t('accounts.noContainers')}
         </HelperText>
       )}
-    </Screen>
+    </EditorScaffold>
   );
 }

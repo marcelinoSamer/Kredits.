@@ -1,5 +1,5 @@
 import { Tabs, router } from 'expo-router';
-import { StyleSheet, View, type ColorValue } from 'react-native';
+import { Easing, StyleSheet, View, useWindowDimensions, type ColorValue } from 'react-native';
 import { useTheme } from 'react-native-paper';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 
@@ -8,6 +8,7 @@ import { tokens, type AppTheme } from '@/theme';
 
 export default function TabsLayout() {
   const theme = useTheme<AppTheme>();
+  const { width } = useWindowDimensions();
 
   // The active tab sits in a small gold "ingot" — gold marks value, and the
   // tab you're on is where you're spending attention.
@@ -43,6 +44,25 @@ export default function TabsLayout() {
           color: theme.colors.onSurface,
         },
         sceneStyle: { backgroundColor: theme.colors.background },
+        // Directional slide between tabs. react-navigation encodes position in
+        // `progress`: a scene left of focus interpolates at -1, right at +1 — so
+        // amplifying forShift to full screen width slides in the travel direction.
+        transitionSpec: {
+          animation: 'timing',
+          config: { duration: 280, easing: Easing.inOut(Easing.cubic) },
+        },
+        sceneStyleInterpolator: ({ current }: any) => ({
+          sceneStyle: {
+            transform: [
+              {
+                translateX: current.progress.interpolate({
+                  inputRange: [-1, 0, 1],
+                  outputRange: [-width, 0, width],
+                }),
+              },
+            ],
+          },
+        }),
         tabBarActiveTintColor: theme.semantic.gold,
         tabBarInactiveTintColor: theme.colors.onSurfaceVariant,
         tabBarStyle: {

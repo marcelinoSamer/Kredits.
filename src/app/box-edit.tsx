@@ -1,9 +1,9 @@
 import { useEffect, useState } from 'react';
 import { Alert } from 'react-native';
-import { Stack, router, useLocalSearchParams } from 'expo-router';
-import { Button, TextInput } from 'react-native-paper';
+import { router, useLocalSearchParams } from 'expo-router';
+import { TextInput } from 'react-native-paper';
 
-import { Screen } from '@/components/Screen';
+import { EditorScaffold } from '@/components/register/EditorScaffold';
 import { AmountInput } from '@/components/AmountInput';
 import { SelectField } from '@/components/SelectField';
 import { DateField } from '@/components/DateField';
@@ -93,12 +93,16 @@ export default function BoxEditScreen() {
   };
 
   return (
-    <Screen>
-      <Stack.Screen
-        options={{ title: editing ? t('boxes.editBox') : t('boxes.addBox'), presentation: 'modal' }}
-      />
+    <EditorScaffold
+      title={editing ? t('boxes.editBox') : t('boxes.addBox')}
+      subtitle={t('boxes.justThisTime')}
+      onSave={save}
+      onDelete={editing ? onDelete : undefined}
+      hero={
+        <AmountInput label={t('boxes.budget')} value={budget} onChangeText={setBudget} currency={currency} />
+      }
+    >
       <TextInput mode="outlined" label={t('common.name')} value={name} onChangeText={setName} autoFocus={!editing} />
-      <AmountInput label={t('boxes.budget')} value={budget} onChangeText={setBudget} currency={currency} />
       <SelectField
         label={t('common.currency')}
         value={currency}
@@ -114,16 +118,13 @@ export default function BoxEditScreen() {
         }}
       />
       <DateField label={t('boxes.ends')} value={endsAt} onChange={setEndsAt} />
-      <TextInput mode="outlined" label={`${t('common.note')} (${t('common.optional')})`} value={note} onChangeText={setNote} multiline />
-
-      <Button mode="contained" onPress={save} style={{ marginTop: 8 }}>
-        {t('common.save')}
-      </Button>
-      {editing && (
-        <Button mode="text" textColor="#C62828" onPress={onDelete}>
-          {t('common.delete')}
-        </Button>
-      )}
-    </Screen>
+      <TextInput
+        mode="outlined"
+        label={`${t('common.note')} (${t('common.optional')})`}
+        value={note}
+        onChangeText={setNote}
+        multiline
+      />
+    </EditorScaffold>
   );
 }

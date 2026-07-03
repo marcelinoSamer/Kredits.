@@ -1,9 +1,9 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Alert } from 'react-native';
-import { Stack, router, useLocalSearchParams } from 'expo-router';
-import { Button, HelperText, SegmentedButtons, TextInput } from 'react-native-paper';
+import { Alert, View } from 'react-native';
+import { router, useLocalSearchParams } from 'expo-router';
+import { HelperText, SegmentedButtons, TextInput } from 'react-native-paper';
 
-import { Screen } from '@/components/Screen';
+import { EditorScaffold } from '@/components/register/EditorScaffold';
 import { AmountInput } from '@/components/AmountInput';
 import { SelectField, type SelectOption } from '@/components/SelectField';
 import { DateField } from '@/components/DateField';
@@ -176,23 +176,32 @@ export default function TransactionEditScreen() {
   };
 
   return (
-    <Screen>
-      <Stack.Screen
-        options={{
-          title: editing ? t('tx.editTransaction') : t('tx.newTransaction'),
-          presentation: 'modal',
-        }}
-      />
-      <SegmentedButtons
-        value={kind}
-        onValueChange={(v) => setKind(v as TxKind)}
-        buttons={[
-          { value: 'expense', label: t('tx.expense'), icon: 'arrow-up' },
-          { value: 'income', label: t('tx.income'), icon: 'arrow-down' },
-        ]}
-      />
-      <AmountInput value={amount} onChangeText={setAmount} currency={currency} autoFocus={!editing} />
-
+    <EditorScaffold
+      title={editing ? t('tx.editTransaction') : t('tx.newTransaction')}
+      subtitle={kind === 'expense' ? t('tx.expense') : t('tx.income')}
+      onSave={save}
+      saveDisabled={accounts.length === 0}
+      onDelete={editing ? onDelete : undefined}
+      hero={
+        <View style={{ gap: 12 }}>
+          <SegmentedButtons
+            value={kind}
+            onValueChange={(v) => setKind(v as TxKind)}
+            buttons={[
+              { value: 'expense', label: t('tx.expense'), icon: 'arrow-up' },
+              { value: 'income', label: t('tx.income'), icon: 'arrow-down' },
+            ]}
+          />
+          <AmountInput
+            value={amount}
+            onChangeText={setAmount}
+            currency={currency}
+            autoFocus={!editing}
+            sign={kind}
+          />
+        </View>
+      }
+    >
       {accounts.length === 0 ? (
         <HelperText type="error" visible>
           {t('accounts.noContainers')}
@@ -217,18 +226,20 @@ export default function TransactionEditScreen() {
         onChange={(k) => setCategoryId(k || null)}
         options={categoryOptions}
       />
-      <TextInput mode="outlined" label={`${t('tx.merchant')} (${t('common.optional')})`} value={merchant} onChangeText={setMerchant} />
+      <TextInput
+        mode="outlined"
+        label={`${t('tx.merchant')} (${t('common.optional')})`}
+        value={merchant}
+        onChangeText={setMerchant}
+      />
       <DateField label={t('common.date')} value={occurredAt} onChange={setOccurredAt} />
-      <TextInput mode="outlined" label={`${t('common.note')} (${t('common.optional')})`} value={note} onChangeText={setNote} multiline />
-
-      <Button mode="contained" onPress={save} style={{ marginTop: 8 }} disabled={accounts.length === 0}>
-        {t('common.save')}
-      </Button>
-      {editing && (
-        <Button mode="text" textColor="#C62828" onPress={onDelete}>
-          {t('common.delete')}
-        </Button>
-      )}
-    </Screen>
+      <TextInput
+        mode="outlined"
+        label={`${t('common.note')} (${t('common.optional')})`}
+        value={note}
+        onChangeText={setNote}
+        multiline
+      />
+    </EditorScaffold>
   );
 }

@@ -1,11 +1,13 @@
 import { useEffect, useState } from 'react';
-import { Alert } from 'react-native';
-import { Stack, router, useLocalSearchParams } from 'expo-router';
+import { Alert, View } from 'react-native';
+import { router, useLocalSearchParams } from 'expo-router';
 import { Button, SegmentedButtons, TextInput } from 'react-native-paper';
 
-import { Screen } from '@/components/Screen';
+import { EditorScaffold } from '@/components/register/EditorScaffold';
 import { AmountInput } from '@/components/AmountInput';
 import { SelectField } from '@/components/SelectField';
+import { IconBadge } from '@/components/IconBadge';
+import { AppText } from '@/components/AppText';
 import { t } from '@/i18n';
 import { CASH_CURRENCY_CODES, currencyMeta, DEFAULT_CURRENCY } from '@/money/currencies';
 import { parseAmount } from '@/ui/number';
@@ -86,14 +88,34 @@ export default function AccountEditScreen() {
     bumpData();
   };
 
+  const meta = ACCOUNT_TYPE_META[type];
+
   return (
-    <Screen>
-      <Stack.Screen
-        options={{
-          title: editing ? t('accounts.editContainer') : t('accounts.newContainer'),
-          presentation: 'modal',
-        }}
-      />
+    <EditorScaffold
+      title={editing ? t('accounts.editContainer') : t('accounts.newContainer')}
+      onSave={save}
+      onDelete={editing ? onDelete : undefined}
+      footer={
+        editing ? (
+          <Button mode="outlined" onPress={onToggleArchive}>
+            {archived ? t('accounts.unarchive') : t('accounts.archive')}
+          </Button>
+        ) : undefined
+      }
+      hero={
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+          <IconBadge icon={meta.icon} color={meta.color} size={48} />
+          <View style={{ flex: 1 }}>
+            <AppText role="title" variant="titleMedium" numberOfLines={1}>
+              {name.trim() || t('accounts.newContainer')}
+            </AppText>
+            <AppText role="muted">
+              {accountTypeLabel(type)}  ·  {currency}
+            </AppText>
+          </View>
+        </View>
+      }
+    >
       <TextInput mode="outlined" label={t('common.name')} value={name} onChangeText={setName} autoFocus={!editing} />
       <SegmentedButtons
         value={type}
@@ -107,20 +129,6 @@ export default function AccountEditScreen() {
         options={CASH_CURRENCY_CODES.map((c) => ({ key: c, label: `${c} — ${currencyMeta(c).symbol}` }))}
       />
       <AmountInput label={t('accounts.openingBalance')} value={opening} onChangeText={setOpening} currency={currency} />
-
-      <Button mode="contained" onPress={save} style={{ marginTop: 8 }}>
-        {t('common.save')}
-      </Button>
-      {editing && (
-        <>
-          <Button mode="outlined" onPress={onToggleArchive}>
-            {archived ? t('accounts.unarchive') : t('accounts.archive')}
-          </Button>
-          <Button mode="text" textColor="#C62828" onPress={onDelete}>
-            {t('common.delete')}
-          </Button>
-        </>
-      )}
-    </Screen>
+    </EditorScaffold>
   );
 }

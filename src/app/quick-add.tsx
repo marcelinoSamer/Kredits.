@@ -1,9 +1,10 @@
-import { Pressable, StyleSheet, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 import { Stack, router, type Href } from 'expo-router';
-import { useTheme } from 'react-native-paper';
+import { Text, useTheme } from 'react-native-paper';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 
-import { Screen } from '@/components/Screen';
+import { BottomSheet } from '@/components/anim/BottomSheet';
+import { AnimatedPressable } from '@/components/anim/AnimatedPressable';
 import { Card } from '@/components/Card';
 import { IconBadge } from '@/components/IconBadge';
 import { AppText } from '@/components/AppText';
@@ -62,24 +63,17 @@ export default function QuickAddScreen() {
         {actions.map((a, i) => (
           <View key={a.label}>
             {i > 0 && <Divider inset={68} />}
-            <Pressable
+            <AnimatedPressable
               onPress={() => go(a.href)}
-              style={({ pressed }) => [
-                styles.row,
-                { paddingVertical: spacing.md, paddingHorizontal: spacing.lg, gap: spacing.md },
-                pressed && { backgroundColor: theme.colors.surfaceVariant },
-              ]}
+              scaleTo={0.97}
+              style={[styles.row, { paddingVertical: spacing.md, paddingHorizontal: spacing.lg, gap: spacing.md }]}
             >
               <IconBadge icon={a.icon} variant="soft" color={a.color} />
               <AppText role="title" style={styles.rowLabel}>
                 {a.label}
               </AppText>
-              <MaterialCommunityIcons
-                name="chevron-right"
-                size={22}
-                color={theme.colors.onSurfaceVariant}
-              />
-            </Pressable>
+              <MaterialCommunityIcons name="chevron-right" size={22} color={theme.colors.onSurfaceVariant} />
+            </AnimatedPressable>
           </View>
         ))}
       </Card>
@@ -87,15 +81,33 @@ export default function QuickAddScreen() {
   );
 
   return (
-    <Screen contentStyle={{ gap: spacing.xl }}>
-      <Stack.Screen options={{ title: t('quickAdd.title'), presentation: 'modal' }} />
-      <Section title={t('quickAdd.money')} actions={money} />
-      <Section title={t('quickAdd.create')} actions={create} />
-    </Screen>
+    <>
+      <Stack.Screen
+        options={{
+          headerShown: false,
+          presentation: 'transparentModal',
+          animation: 'none',
+          contentStyle: { backgroundColor: 'transparent' },
+        }}
+      />
+      <BottomSheet onClose={() => router.back()}>
+        <View style={{ paddingHorizontal: spacing.xl, paddingTop: spacing.xs, gap: spacing.lg }}>
+          <View style={styles.header}>
+            <Text variant="headlineSmall" style={{ color: theme.colors.onSurface }}>
+              {t('quickAdd.title')}
+            </Text>
+            <MaterialCommunityIcons name="cash-register" size={24} color={theme.semantic.gold} />
+          </View>
+          <Section title={t('quickAdd.money')} actions={money} />
+          <Section title={t('quickAdd.create')} actions={create} />
+        </View>
+      </BottomSheet>
+    </>
   );
 }
 
 const styles = StyleSheet.create({
+  header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   row: { flexDirection: 'row', alignItems: 'center' },
   rowLabel: { flex: 1 },
 });

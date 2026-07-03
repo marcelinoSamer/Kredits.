@@ -1,9 +1,8 @@
 import { useEffect, useState } from 'react';
 import { Alert } from 'react-native';
-import { Stack, router, useLocalSearchParams } from 'expo-router';
-import { Button } from 'react-native-paper';
+import { router, useLocalSearchParams } from 'expo-router';
 
-import { Screen } from '@/components/Screen';
+import { EditorScaffold } from '@/components/register/EditorScaffold';
 import { AmountInput } from '@/components/AmountInput';
 import { SelectField, type SelectOption } from '@/components/SelectField';
 import { t } from '@/i18n';
@@ -67,24 +66,20 @@ export default function BudgetEditScreen() {
   };
 
   return (
-    <Screen>
-      <Stack.Screen options={{ title: t('budgets.addBudget'), presentation: 'modal' }} />
+    <EditorScaffold
+      title={editing ? t('budgets.title') : t('budgets.addBudget')}
+      subtitle={t('budgets.monthly')}
+      onSave={save}
+      onDelete={editing ? onDelete : undefined}
+      hero={<AmountInput label={t('budgets.limit')} value={limit} onChangeText={setLimit} currency={currency} />}
+    >
       <SelectField label={t('common.category')} value={categoryId} onChange={setCategoryId} options={options} />
-      <AmountInput label={t('budgets.limit')} value={limit} onChangeText={setLimit} currency={currency} />
       <SelectField
         label={t('common.currency')}
         value={currency}
         onChange={setCurrency}
         options={CASH_CURRENCY_CODES.map((c) => ({ key: c, label: `${c} — ${currencyMeta(c).symbol}` }))}
       />
-      <Button mode="contained" onPress={save} style={{ marginTop: 8 }}>
-        {t('common.save')}
-      </Button>
-      {editing && (
-        <Button mode="text" textColor="#C62828" onPress={onDelete}>
-          {t('common.delete')}
-        </Button>
-      )}
-    </Screen>
+    </EditorScaffold>
   );
 }

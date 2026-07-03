@@ -1,9 +1,9 @@
 import { useEffect, useState } from 'react';
 import { Alert } from 'react-native';
-import { Stack, router, useLocalSearchParams } from 'expo-router';
-import { Button, SegmentedButtons, TextInput } from 'react-native-paper';
+import { router, useLocalSearchParams } from 'expo-router';
+import { SegmentedButtons, TextInput } from 'react-native-paper';
 
-import { Screen } from '@/components/Screen';
+import { EditorScaffold } from '@/components/register/EditorScaffold';
 import { AmountInput } from '@/components/AmountInput';
 import { SelectField } from '@/components/SelectField';
 import { DateField } from '@/components/DateField';
@@ -32,7 +32,6 @@ export default function AssetEditScreen() {
   useEffect(() => {
     if (!id) return;
     getAsset(id).then((a) => {
-      
       if (!a) return;
       setName(a.name);
       setType(a.type);
@@ -83,13 +82,13 @@ export default function AssetEditScreen() {
   };
 
   return (
-    <Screen>
-      <Stack.Screen
-        options={{
-          title: editing ? t('asset.editAsset') : t('asset.newAsset'),
-          presentation: 'modal',
-        }}
-      />
+    <EditorScaffold
+      title={editing ? t('asset.editAsset') : t('asset.newAsset')}
+      subtitle={assetTypeLabel(type)}
+      onSave={save}
+      onDelete={editing ? onDelete : undefined}
+      hero={<AmountInput label={t('asset.value')} value={value} onChangeText={setValue} currency={currency} />}
+    >
       <TextInput mode="outlined" label={t('common.name')} value={name} onChangeText={setName} autoFocus={!editing} />
       <SegmentedButtons
         value={type}
@@ -104,7 +103,6 @@ export default function AssetEditScreen() {
         onChangeText={(x) => setQuantity(sanitizeDecimal(x))}
       />
       <TextInput mode="outlined" label={`${t('asset.unit')} (${t('common.optional')})`} value={unit} onChangeText={setUnit} />
-      <AmountInput label={t('asset.value')} value={value} onChangeText={setValue} currency={currency} />
       <SelectField
         label={t('common.currency')}
         value={currency}
@@ -112,16 +110,13 @@ export default function AssetEditScreen() {
         options={CASH_CURRENCY_CODES.map((c) => ({ key: c, label: `${c} — ${currencyMeta(c).symbol}` }))}
       />
       <DateField label={t('asset.valuedAt')} value={valuedAt} onChange={setValuedAt} />
-      <TextInput mode="outlined" label={`${t('common.note')} (${t('common.optional')})`} value={note} onChangeText={setNote} multiline />
-
-      <Button mode="contained" onPress={save} style={{ marginTop: 8 }}>
-        {t('common.save')}
-      </Button>
-      {editing && (
-        <Button mode="text" textColor="#C62828" onPress={onDelete}>
-          {t('common.delete')}
-        </Button>
-      )}
-    </Screen>
+      <TextInput
+        mode="outlined"
+        label={`${t('common.note')} (${t('common.optional')})`}
+        value={note}
+        onChangeText={setNote}
+        multiline
+      />
+    </EditorScaffold>
   );
 }
