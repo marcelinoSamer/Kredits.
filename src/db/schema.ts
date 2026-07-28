@@ -5,10 +5,14 @@ import type { CurrencyCode } from '@/money/currencies';
 
 // 'box' = the hidden account behind a "Just this time" event box. Excluded
 // from normal account pickers/lists; its balance still counts in net worth.
-export type AccountType = 'cash' | 'bank' | 'wallet' | 'savings' | 'box';
+// 'credit' = a credit-card / line-of-credit pocket: spending it is a liability
+// (balance goes negative = owed) that must be repaid within a grace window.
+export type AccountType = 'cash' | 'bank' | 'wallet' | 'savings' | 'box' | 'credit';
 export type TxKind = 'income' | 'expense';
 export type TxSource = 'manual' | 'sms';
-export type AssetType = 'gold' | 'stock' | 'crypto' | 'property' | 'other';
+// 'bank_cert' = a bank certificate / deposit: blocked capital that may earn
+// interest until it matures.
+export type AssetType = 'gold' | 'stock' | 'crypto' | 'property' | 'bank_cert' | 'other';
 export type CategoryKind = 'income' | 'expense';
 export type SmsLang = 'en' | 'ar' | 'auto';
 export type PendingStatus = 'pending' | 'confirmed' | 'dismissed';
@@ -24,6 +28,10 @@ export interface Account {
   archived: number; // 0 | 1
   sort_order: number;
   created_at: number;
+  /** Credit pockets only: the credit ceiling. */
+  credit_limit: number | null;
+  /** Credit pockets only: days from a charge until repayment is due (e.g. 55). */
+  grace_days: number | null;
 }
 
 export interface Category {
@@ -77,6 +85,12 @@ export interface Asset {
   valued_at: number;
   note: string | null;
   created_at: number;
+  /** Bank-cert only: annual interest rate (%), or null/0 for a no-interest deposit. */
+  interest_rate: number | null;
+  /** Bank-cert only: when the capital was locked in. */
+  starts_at: number | null;
+  /** Bank-cert only: when it matures / unblocks. */
+  matures_at: number | null;
 }
 
 export interface FxRateRow {

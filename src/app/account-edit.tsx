@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Alert, View } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
-import { Button, SegmentedButtons, TextInput } from 'react-native-paper';
+import { Button, HelperText, TextInput } from 'react-native-paper';
 
 import { EditorScaffold } from '@/components/register/EditorScaffold';
 import { AmountInput } from '@/components/AmountInput';
@@ -20,18 +20,25 @@ import {
   setArchived,
   updateAccount,
 } from '@/db/repositories/accounts';
+import { DEFAULT_GRACE_DAYS } from '@/db/repositories/credit';
 import { bumpData } from '@/state/dataVersion';
 import type { AccountType } from '@/db/schema';
 
 export default function AccountEditScreen() {
-  const { id } = useLocalSearchParams<{ id?: string }>();
+  const { id, type: typeParam } = useLocalSearchParams<{ id?: string; type?: string }>();
   const editing = !!id;
 
   const [name, setName] = useState('');
-  const [type, setType] = useState<AccountType>('bank');
+  const [type, setType] = useState<AccountType>(
+    ACCOUNT_TYPES.includes(typeParam as AccountType) ? (typeParam as AccountType) : 'bank',
+  );
   const [currency, setCurrency] = useState(DEFAULT_CURRENCY);
   const [opening, setOpening] = useState('0');
+  const [creditLimit, setCreditLimit] = useState('0');
+  const [graceDays, setGraceDays] = useState(String(DEFAULT_GRACE_DAYS));
   const [archived, setArchivedState] = useState(false);
+
+  const isCredit = type === 'credit';
 
   useEffect(() => {
     if (!id) return;
@@ -41,6 +48,8 @@ export default function AccountEditScreen() {
       setType(a.type);
       setCurrency(a.currency);
       setOpening(String(a.opening_balance));
+      setCreditLimit(String(a.credit_limit ?? 0));
+      setGraceDays(String(a.grace_days ?? DEFAULT_GRACE_DAYS));
       setArchivedState(a.archived === 1);
     });
   }, [id]);
@@ -55,9 +64,12 @@ export default function AccountEditScreen() {
       name: name.trim(),
       type,
       currency,
-      opening_balance: parseAmount(opening),
+      // A credit pocket starts owing nothing; its ceiling lives in credit_limit.
+      opening_balance: isCredit ? 0 : parseAmount(opening),
       icon: meta.icon,
       color: meta.color,
+      credit_limit: isCredit ? parseAmount(creditLimit) : null,
+      grace_days: isCredit ? Math.max(1, parseInt(graceDays, 10) || DEFAULT_GRACE_DAYS) : null,
     };
     if (editing && id) await updateAccount(id, input);
     else await createAccount(input);
@@ -117,10 +129,11 @@ export default function AccountEditScreen() {
       }
     >
       <TextInput mode="outlined" label={t('common.name')} value={name} onChangeText={setName} autoFocus={!editing} />
-      <SegmentedButtons
+      <SelectField
+        label={t('common.type')}
         value={type}
-        onValueChange={(v) => setType(v as AccountType)}
-        buttons={ACCOUNT_TYPES.map((tp) => ({ value: tp, label: accountTypeLabel(tp) }))}
+        onChange={(k) => setType(k as AccountType)}
+        options={ACCOUNT_TYPES.map((tp) => ({ key: tp, label: accountTypeLabel(tp) }))}
       />
       <SelectField
         label={t('common.currency')}
@@ -128,7 +141,23 @@ export default function AccountEditScreen() {
         onChange={setCurrency}
         options={CASH_CURRENCY_CODES.map((c) => ({ key: c, label: `${c} — ${currencyMeta(c).symbol}` }))}
       />
-      <AmountInput label={t('accounts.openingBalance')} value={opening} onChangeText={setOpening} currency={currency} />
+      {isCredit ? (
+        <>
+          <AmountInput label={t('credit.creditLimit')} value={creditLimit} onChangeText={setCreditLimit} currency={currency} />
+          <TextInput
+            mode="outlined"
+            label={t('credit.graceDays')}
+            value={graceDays}
+            keyboardType="number-pad"
+            onChangeText={(v) => setGraceDays(v.replace(/[^0-9]/g, ''))}
+          />
+          <HelperText type="info" visible>
+            {t('credit.graceHint')}
+          </HelperText>
+        </>
+      ) : (
+        <AmountInput label={t('accounts.openingBalance')} value={opening} onChangeText={setOpening} currency={currency} />
+      )}
     </EditorScaffold>
   );
 }

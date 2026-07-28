@@ -50,7 +50,9 @@ export default function QuickAddScreen() {
 
   const create: Action[] = [
     { icon: 'wallet', color: theme.colors.primary, label: t('accounts.addContainer'), href: '/account-edit' },
+    { icon: 'credit-card-outline', color: '#EF6C57', label: t('accounts.addCredit'), href: { pathname: '/account-edit', params: { type: 'credit' } } },
     { icon: 'gold', color: theme.semantic.gold, label: t('accounts.addAsset'), href: '/asset-edit' },
+    { icon: 'certificate-outline', color: '#3FA7A0', label: t('asset.addBankCert'), href: { pathname: '/asset-edit', params: { type: 'bank_cert' } } },
     { icon: 'chart-donut', color: theme.colors.primary, label: t('budgets.addBudget'), href: '/budget-edit' },
     { icon: 'target', color: theme.colors.primary, label: t('goals.addGoal'), href: '/goal-edit' },
     { icon: 'party-popper', color: theme.colors.primary, label: t('boxes.justThisTime'), href: '/box-edit' },
