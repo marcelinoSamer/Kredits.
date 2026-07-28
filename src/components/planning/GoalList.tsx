@@ -1,7 +1,9 @@
 import { View, StyleSheet } from 'react-native';
 import { router } from 'expo-router';
-import { Card, ProgressBar, Text, useTheme } from 'react-native-paper';
+import { ProgressBar, useTheme } from 'react-native-paper';
 
+import { Card } from '@/components/Card';
+import { AppText } from '@/components/AppText';
 import { MoneyText } from '@/components/MoneyText';
 import { EmptyState } from '@/components/EmptyState';
 import { t } from '@/i18n';
@@ -66,44 +68,44 @@ export function GoalList() {
       {data.map(({ goal, progress }) => (
         <Card
           key={goal.id}
-          mode="contained"
           onPress={() => router.push({ pathname: '/goal-edit', params: { id: goal.id } })}
+          style={{ gap: 6 }}
         >
-          <Card.Content style={{ gap: 6 }}>
-            <View style={styles.row}>
-              <Text variant="titleMedium">{goal.name}</Text>
-              <Text variant="bodySmall" style={{ color: theme.colors.onSurfaceVariant }}>
-                {Math.round(progress.percent)}%
-              </Text>
-            </View>
-            <ProgressBar
-              progress={Math.min(1, progress.percent / 100)}
-              color={progress.reached ? theme.semantic.positive : theme.colors.primary}
-            />
-            <View style={styles.row}>
-              <MoneyText value={progress.saved} currency={goal.currency} variant="bodyMedium" />
-              <Text style={{ color: theme.colors.onSurfaceVariant }}>
-                / <MoneyText value={goal.target_amount} currency={goal.currency} variant="bodyMedium" />
-              </Text>
-            </View>
-            {progress.reached ? (
-              <Text style={{ color: theme.semantic.positive }}>{t('goals.reached')}</Text>
-            ) : (
-              <>
-                {goal.target_date != null && progress.monthlyNeeded != null && (
-                  <Text variant="bodySmall" style={{ color: theme.colors.onSurfaceVariant }}>
-                    {t('goals.targetDate')}: {formatDate(goal.target_date)} ·{' '}
-                    {t('goals.perMonth', { amount: Math.round(progress.monthlyNeeded) })}
-                  </Text>
-                )}
-                {progress.etaMonths != null && (
-                  <Text variant="bodySmall" style={{ color: theme.colors.onSurfaceVariant }}>
-                    {t('goals.etaMonths', { months: progress.etaMonths })}
-                  </Text>
-                )}
-              </>
-            )}
-          </Card.Content>
+          <View style={styles.row}>
+            <AppText role="title" variant="titleMedium">
+              {goal.name}
+            </AppText>
+            <AppText role="muted" variant="bodySmall">
+              {Math.round(progress.percent)}%
+            </AppText>
+          </View>
+          <ProgressBar
+            progress={Math.min(1, progress.percent / 100)}
+            color={progress.reached ? theme.semantic.positive : theme.colors.primary}
+          />
+          <View style={styles.row}>
+            <MoneyText value={progress.saved} currency={goal.currency} variant="bodyMedium" />
+            <AppText role="muted">
+              / <MoneyText value={goal.target_amount} currency={goal.currency} variant="bodyMedium" />
+            </AppText>
+          </View>
+          {progress.reached ? (
+            <AppText style={{ color: theme.semantic.positive }}>{t('goals.reached')}</AppText>
+          ) : (
+            <>
+              {goal.target_date != null && progress.monthlyNeeded != null && (
+                <AppText role="muted" variant="bodySmall">
+                  {t('goals.targetDate')}: {formatDate(goal.target_date)} ·{' '}
+                  {t('goals.perMonth', { amount: Math.round(progress.monthlyNeeded) })}
+                </AppText>
+              )}
+              {progress.etaMonths != null && (
+                <AppText role="muted" variant="bodySmall">
+                  {t('goals.etaMonths', { months: progress.etaMonths })}
+                </AppText>
+              )}
+            </>
+          )}
         </Card>
       ))}
     </>

@@ -140,10 +140,12 @@ const dark = {
   gold: '#E0A93E',
   goldDim: 'rgba(224,169,62,0.16)',
   textHi: '#EAF2EE',
-  textLo: '#92A39D',
+  // Muted/secondary text — brightened so subtitles, meta and dates read clearly
+  // on the emerald-ink background (never a dim near-invisible grey).
+  textLo: '#AEBCB6',
   positive: '#34C79A',
   negative: '#F0795E',
-  neutral: '#6E827B',
+  neutral: '#93A69E',
 };
 
 const light = {
