@@ -8,6 +8,8 @@
     "@expo-google-fonts/space-grotesk": "^0.4.1",
     "@expo/ui": "~56.0.18",
     "@expo/vector-icons": "^15.0.2",
+    "@noble/ciphers": "^2.2.0",
+    "@noble/hashes": "^2.2.0",
     "expo": "~56.0.12",
     "expo-constants": "~56.0.18",
     "expo-crypto": "~56.0.4",

@@ -1,99 +1,103 @@
 import * as Crypto from 'expo-crypto';
+import { gcm } from '@noble/ciphers/aes.js';
+import { utf8ToBytes, bytesToUtf8 } from '@noble/ciphers/utils.js';
+import { pbkdf2Async } from '@noble/hashes/pbkdf2.js';
+import { sha256 } from '@noble/hashes/sha2.js';
 
-// A lightweight, dependency-free passphrase cipher for offline backups.
-// Confidentiality comes from a SHA-256 keystream (CTR-style) XORed with the
-// UTF-8 plaintext. Not a substitute for audited AES, but real protection when
-// the passphrase is strong — and it keeps the app fully offline with no native
-// crypto beyond expo-crypto's hashing + RNG.
+// Standard, authenticated encryption for offline backups — no custom crypto:
+//   key    = PBKDF2-HMAC-SHA256(passphrase, salt, iterations)  -> 256-bit
+//   cipher = AES-256-GCM(key, nonce) over the UTF-8 plaintext
+//
+// AES-256-GCM (NIST SP 800-38D / ISO/IEC 19772) and PBKDF2 (NIST SP 800-132,
+// PKCS#5 / RFC 8018) are internationally standardised algorithms. GCM's
+// authentication tag both protects integrity and lets us detect a wrong
+// passphrase. Everything runs on-device with no network access.
 
 export interface EncryptedPayload {
-  v: 1;
-  salt: string;
-  verifier: string;
-  data: string; // base64
+  v: 2;
+  kdf: 'pbkdf2-sha256';
+  iterations: number;
+  cipher: 'aes-256-gcm';
+  salt: string; // base64, 16 bytes
+  nonce: string; // base64, 12 bytes
+  data: string; // base64, AES-GCM ciphertext with appended 16-byte tag
 }
+
+// OWASP-recommended floor for PBKDF2-HMAC-SHA256 is high; backup export/import
+// is a rare, user-initiated action, so a strong count is affordable even in JS.
+const PBKDF2_ITERATIONS = 210_000;
+const KEY_BYTES = 32; // AES-256
+const SALT_BYTES = 16;
+const NONCE_BYTES = 12; // GCM standard nonce length
 
 const B64 = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
 
-function base64Encode(latin1: string): string {
+function bytesToBase64(bytes: Uint8Array): string {
   let out = '';
-  for (let i = 0; i < latin1.length; i += 3) {
-    const a = latin1.charCodeAt(i);
-    const b = i + 1 < latin1.length ? latin1.charCodeAt(i + 1) : NaN;
-    const c = i + 2 < latin1.length ? latin1.charCodeAt(i + 2) : NaN;
+  for (let i = 0; i < bytes.length; i += 3) {
+    const a = bytes[i];
+    const b = i + 1 < bytes.length ? bytes[i + 1] : undefined;
+    const c = i + 2 < bytes.length ? bytes[i + 2] : undefined;
     out += B64[a >> 2];
-    out += B64[((a & 3) << 4) | (Number.isNaN(b) ? 0 : b >> 4)];
-    out += Number.isNaN(b) ? '=' : B64[((b & 15) << 2) | (Number.isNaN(c) ? 0 : c >> 6)];
-    out += Number.isNaN(c) ? '=' : B64[c & 63];
+    out += B64[((a & 3) << 4) | (b === undefined ? 0 : b >> 4)];
+    out += b === undefined ? '=' : B64[((b & 15) << 2) | (c === undefined ? 0 : c >> 6)];
+    out += c === undefined ? '=' : B64[c & 63];
   }
   return out;
 }
 
-function base64Decode(b64: string): string {
+function base64ToBytes(b64: string): Uint8Array {
   const clean = b64.replace(/[^A-Za-z0-9+/]/g, '');
-  let out = '';
+  const out: number[] = [];
   for (let i = 0; i < clean.length; i += 4) {
     const a = B64.indexOf(clean[i]);
     const b = B64.indexOf(clean[i + 1]);
     const c = B64.indexOf(clean[i + 2]);
     const d = B64.indexOf(clean[i + 3]);
-    out += String.fromCharCode((a << 2) | (b >> 4));
-    if (c >= 0) out += String.fromCharCode(((b & 15) << 4) | (c >> 2));
-    if (d >= 0) out += String.fromCharCode(((c & 3) << 6) | d);
+    out.push((a << 2) | (b >> 4));
+    if (c >= 0) out.push(((b & 15) << 4) | (c >> 2));
+    if (d >= 0) out.push(((c & 3) << 6) | d);
   }
-  return out;
+  return new Uint8Array(out);
 }
 
-function utf8Encode(str: string): string {
-  return unescape(encodeURIComponent(str));
-}
-
-function utf8Decode(latin1: string): string {
-  return decodeURIComponent(escape(latin1));
-}
-
-async function sha256(input: string): Promise<string> {
-  return Crypto.digestStringAsync(Crypto.CryptoDigestAlgorithm.SHA256, input);
-}
-
-function hexToBytes(hex: string): number[] {
-  const bytes: number[] = [];
-  for (let i = 0; i < hex.length; i += 2) bytes.push(parseInt(hex.substr(i, 2), 16));
-  return bytes;
-}
-
-async function keystream(passphrase: string, salt: string, blocks: number): Promise<number[]> {
-  const out: number[] = [];
-  for (let i = 0; i < blocks; i++) {
-    out.push(...hexToBytes(await sha256(`${passphrase}|${salt}|${i}`)));
-  }
-  return out;
+async function deriveKey(
+  passphrase: string,
+  salt: Uint8Array,
+  iterations: number,
+): Promise<Uint8Array> {
+  return pbkdf2Async(sha256, utf8ToBytes(passphrase), salt, {
+    c: iterations,
+    dkLen: KEY_BYTES,
+  });
 }
 
 export async function encrypt(plaintext: string, passphrase: string): Promise<EncryptedPayload> {
-  const saltBytes = await Crypto.getRandomBytesAsync(16);
-  const salt = saltBytes.reduce((s, b) => s + b.toString(16).padStart(2, '0'), '');
-  const verifier = (await sha256(`${passphrase}|${salt}|verify`)).slice(0, 16);
-
-  const bytes = utf8Encode(plaintext);
-  const ks = await keystream(passphrase, salt, Math.ceil(bytes.length / 32) || 1);
-  let cipher = '';
-  for (let i = 0; i < bytes.length; i++) {
-    cipher += String.fromCharCode(bytes.charCodeAt(i) ^ ks[i]);
-  }
-  return { v: 1, salt, verifier, data: base64Encode(cipher) };
+  const salt = await Crypto.getRandomBytesAsync(SALT_BYTES);
+  const nonce = await Crypto.getRandomBytesAsync(NONCE_BYTES);
+  const key = await deriveKey(passphrase, salt, PBKDF2_ITERATIONS);
+  const data = gcm(key, nonce).encrypt(utf8ToBytes(plaintext));
+  return {
+    v: 2,
+    kdf: 'pbkdf2-sha256',
+    iterations: PBKDF2_ITERATIONS,
+    cipher: 'aes-256-gcm',
+    salt: bytesToBase64(salt),
+    nonce: bytesToBase64(nonce),
+    data: bytesToBase64(data),
+  };
 }
 
-/** Returns the decrypted plaintext, or null if the passphrase is wrong. */
+/** Returns the decrypted plaintext, or null if the passphrase is wrong or the
+ *  file has been tampered with (AES-GCM tag verification fails). */
 export async function decrypt(payload: EncryptedPayload, passphrase: string): Promise<string | null> {
-  const verifier = (await sha256(`${passphrase}|${payload.salt}|verify`)).slice(0, 16);
-  if (verifier !== payload.verifier) return null;
-
-  const cipher = base64Decode(payload.data);
-  const ks = await keystream(passphrase, payload.salt, Math.ceil(cipher.length / 32) || 1);
-  let bytes = '';
-  for (let i = 0; i < cipher.length; i++) {
-    bytes += String.fromCharCode(cipher.charCodeAt(i) ^ ks[i]);
+  try {
+    const salt = base64ToBytes(payload.salt);
+    const nonce = base64ToBytes(payload.nonce);
+    const key = await deriveKey(passphrase, salt, payload.iterations);
+    const plain = gcm(key, nonce).decrypt(base64ToBytes(payload.data));
+    return bytesToUtf8(plain);
+  } catch {
+    return null;
   }
-  return utf8Decode(bytes);
 }
