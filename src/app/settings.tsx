@@ -162,6 +162,14 @@ export default function SettingsScreen() {
       />
 
       <Divider />
+      <List.Subheader>{t('settings.legal')}</List.Subheader>
+      <List.Item
+        title={t('settings.privacyPolicy')}
+        left={() => <List.Icon icon="shield-account-outline" />}
+        onPress={() => router.push('/privacy')}
+      />
+
+      <Divider />
       <List.Item
         title={t('settings.about')}
         description={t('settings.offlineNote')}

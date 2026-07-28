@@ -11,6 +11,7 @@ const KEYS = {
   locale: 'locale',
   themeMode: 'theme_mode',
   lockEnabled: 'lock_enabled',
+  walkthroughSeen: 'walkthrough_seen',
 } as const;
 
 interface SettingsState {
@@ -19,12 +20,15 @@ interface SettingsState {
   locale: AppLocale;
   themeMode: ThemeMode;
   lockEnabled: boolean;
+  /** True once the first-launch walkthrough has been completed or skipped. */
+  walkthroughSeen: boolean;
   load: () => Promise<void>;
   setDisplayCurrency: (code: CurrencyCode) => Promise<void>;
   /** Returns true when the RTL direction changed (caller should reload). */
   setLocale: (locale: AppLocale) => Promise<boolean>;
   setThemeMode: (mode: ThemeMode) => Promise<void>;
   setLockEnabled: (enabled: boolean) => Promise<void>;
+  completeWalkthrough: () => Promise<void>;
 }
 
 export const useSettings = create<SettingsState>((set) => ({
@@ -33,6 +37,7 @@ export const useSettings = create<SettingsState>((set) => ({
   locale: 'en',
   themeMode: 'system',
   lockEnabled: false,
+  walkthroughSeen: false,
 
   load: async () => {
     const s = await getAllSettings();
@@ -44,6 +49,7 @@ export const useSettings = create<SettingsState>((set) => ({
       locale,
       themeMode: (s[KEYS.themeMode] as ThemeMode) || 'system',
       lockEnabled: s[KEYS.lockEnabled] === '1',
+      walkthroughSeen: s[KEYS.walkthroughSeen] === '1',
     });
   },
 
@@ -67,5 +73,10 @@ export const useSettings = create<SettingsState>((set) => ({
   setLockEnabled: async (enabled) => {
     await setSetting(KEYS.lockEnabled, enabled ? '1' : '0');
     set({ lockEnabled: enabled });
+  },
+
+  completeWalkthrough: async () => {
+    await setSetting(KEYS.walkthroughSeen, '1');
+    set({ walkthroughSeen: true });
   },
 }));

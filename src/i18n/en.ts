@@ -283,6 +283,13 @@ export default {
     importData: 'Import',
     about: 'About',
     offlineNote: 'This app is 100% offline. Your data never leaves this device.',
+    legal: 'Legal',
+    privacyPolicy: 'Privacy Policy',
+  },
+  privacy: {
+    title: 'Privacy Policy',
+    updated: 'Last updated {{date}}',
+    close: 'Close',
   },
   lock: {
     title: 'Unlock',
@@ -293,5 +300,33 @@ export default {
     useBiometrics: 'Use biometrics',
     unlock: 'Unlock',
     pinMismatch: 'PINs do not match',
+  },
+  walkthrough: {
+    skip: 'Skip',
+    next: 'Next',
+    back: 'Back',
+    start: 'Enter Kard',
+    privacy: 'Privacy Policy',
+    p1: {
+      eyebrow: 'The Offline Ledger',
+      title: 'Your money, sealed on this device.',
+      body: 'No accounts. No cloud. No sign-up. Every figure you enter is encrypted and stays on your phone — Kard can’t send it anywhere.',
+    },
+    p2: {
+      eyebrow: 'Track everything',
+      title: 'Pockets, receipts, and real net worth.',
+      body: 'Sort cash and accounts into Pockets, log Receipts as you go, and add assets like gold or stocks.',
+      b1: 'Pockets & transfers, any currency',
+      b2: 'Assets — gold, stocks, property',
+      b3: 'Net worth in your display currency',
+    },
+    p3: {
+      eyebrow: 'The Long Game',
+      title: 'Plan ahead, and capture bank SMS.',
+      body: 'Set budgets with on-device alerts, chase goals, and fence off one-off events in Boxes.',
+      b1: 'Budgets with local threshold alerts',
+      b2: 'Goals & “just this time” Boxes',
+      b3: 'Android: reads bank SMS, EN & AR',
+    },
   },
 };

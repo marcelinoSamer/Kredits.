@@ -24,6 +24,7 @@ import { getThemes, tokens } from '@/theme';
 import { useBootstrap } from '@/state/bootstrap';
 import { useSettings } from '@/state/settings';
 import { LockScreen } from '@/components/LockScreen';
+import { Walkthrough, FORCE_WALKTHROUGH } from '@/components/Walkthrough';
 
 SplashScreen.preventAutoHideAsync().catch(() => {});
 
@@ -38,7 +39,12 @@ export default function RootLayout() {
   const systemScheme = useColorScheme();
   const themeMode = useSettings((s) => s.themeMode);
   const lockEnabled = useSettings((s) => s.lockEnabled);
+  const walkthroughSeen = useSettings((s) => s.walkthroughSeen);
+  const completeWalkthrough = useSettings((s) => s.completeWalkthrough);
   const [unlocked, setUnlocked] = useState(false);
+  // Local per-session flag so the DEV replay flag can re-show every launch
+  // without the persisted "seen" value blocking it.
+  const [walkthroughDone, setWalkthroughDone] = useState(false);
 
   const [fontsLoaded] = useFonts({
     Inter_400Regular,
@@ -82,6 +88,15 @@ export default function RootLayout() {
       >
         <ActivityIndicator color={paper.colors.primary} />
       </View>
+    );
+  } else if ((FORCE_WALKTHROUGH || !walkthroughSeen) && !walkthroughDone) {
+    content = (
+      <Walkthrough
+        onDone={() => {
+          completeWalkthrough().catch(() => {});
+          setWalkthroughDone(true);
+        }}
+      />
     );
   } else if (lockEnabled && !unlocked) {
     content = <LockScreen onUnlock={() => setUnlocked(true)} />;
