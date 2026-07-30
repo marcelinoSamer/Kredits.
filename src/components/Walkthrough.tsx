@@ -108,7 +108,7 @@ export function Walkthrough({ onDone }: Props) {
     <SafeAreaView style={[styles.root, { backgroundColor: theme.colors.background }]}>
       {/* Top bar: brand tick + Skip */}
       <View style={styles.topBar}>
-        <Eyebrow color={theme.colors.onSurfaceVariant}>KARD</Eyebrow>
+        <Eyebrow color={theme.colors.onSurfaceVariant}>KREDITS</Eyebrow>
         {!last ? (
           <Pressable onPress={onDone} hitSlop={12}>
             <AppText role="muted" variant="labelLarge">

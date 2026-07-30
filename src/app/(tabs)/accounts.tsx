@@ -1,10 +1,11 @@
 import { useMemo, useState } from 'react';
 import { Pressable, RefreshControl, ScrollView, StyleSheet, View } from 'react-native';
 import { router } from 'expo-router';
-import { FAB, SegmentedButtons, useTheme } from 'react-native-paper';
+import { FAB, useTheme } from 'react-native-paper';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 
 import { MoneyText } from '@/components/MoneyText';
+import { SegmentTabs } from '@/components/SegmentTabs';
 import { Eyebrow } from '@/components/Eyebrow';
 import { AppText } from '@/components/AppText';
 import { Card } from '@/components/Card';
@@ -81,10 +82,10 @@ export default function AccountsScreen() {
           <RefreshControl refreshing={!!loading} onRefresh={reload} tintColor={theme.colors.primary} />
         }
       >
-        <SegmentedButtons
+        <SegmentTabs
           value={segment}
-          onValueChange={(v) => setSegment(v as Segment)}
-          buttons={[
+          onChange={setSegment}
+          options={[
             { value: 'containers', label: t('accounts.containers'), icon: 'wallet' },
             { value: 'assets', label: t('accounts.assets'), icon: 'gold' },
           ]}

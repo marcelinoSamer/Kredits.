@@ -146,6 +146,10 @@ const dark = {
   positive: '#34C79A',
   negative: '#F0795E',
   neutral: '#93A69E',
+  // Deep emerald-ink used for shadows/scrims. Dark mode never uses pure black —
+  // even the darkest wash keeps a green tint (rgb 2,16,12), below the bg.
+  ink: '#02100C',
+  backdrop: 'rgba(2,16,12,0.55)',
 };
 
 const light = {
@@ -164,6 +168,9 @@ const light = {
   positive: '#0C7A55',
   negative: '#B23A28',
   neutral: '#6B7A74',
+  // Light mode keeps a deep emerald-ink for shadows/scrims (not pure black).
+  ink: '#0B1F1A',
+  backdrop: 'rgba(11,31,26,0.4)',
 };
 
 type Palette = typeof dark;
@@ -198,12 +205,25 @@ function makeFonts(): MD3Fonts {
 }
 
 function buildTheme(base: MD3Theme, p: Palette): AppTheme {
+  // Shadow colour is palette-driven so the dark theme never falls back to the
+  // pure-black MD3 default — it uses the deep emerald `ink` instead.
+  const themedTokens: DesignTokens = {
+    ...tokens,
+    shadow: {
+      card: { ...SHADOW.card, shadowColor: p.ink },
+      hero: { ...SHADOW.hero, shadowColor: p.ink },
+    },
+  };
   return {
     ...base,
     roundness: RADIUS.md,
     fonts: makeFonts(),
     colors: {
       ...base.colors,
+      // MD3 defaults these to pure black; override so overlays stay emerald-ink.
+      shadow: p.ink,
+      scrim: p.ink,
+      backdrop: p.backdrop,
       primary: p.primary,
       onPrimary: p.onPrimary,
       primaryContainer: p.primaryContainer,
@@ -241,7 +261,7 @@ function buildTheme(base: MD3Theme, p: Palette): AppTheme {
       gold: p.gold,
       goldDim: p.goldDim,
     },
-    tokens,
+    tokens: themedTokens,
   };
 }
 

@@ -2,21 +2,21 @@
 
 ---
 
-# Kard — Product & Business Brief
+# Kredits — Product & Business Brief
 
 > **About this document.** The first line imports `AGENTS.md` (engineering
 > gotchas & checks, for coding sessions). Everything below is a **self-contained
 > product + business brief** meant to bootstrap a strategy conversation in a
-> separate session — read it cold and you should understand what Kard is, who
+> separate session — read it cold and you should understand what Kredits is, who
 > it's for, what's decided, what's constrained, and what's still open. The
 > business-model options here are framed as *questions to explore*, not
 > decisions that have been made.
 
 ---
 
-## 1. What Kard is
+## 1. What Kredits is
 
-**Kard — "The Offline Ledger."** A fully **offline, private** personal-finance
+**Kredits — "The Offline Ledger."** A fully **offline, private** personal-finance
 app for iOS and Android (Expo / React Native / TypeScript). No accounts, no
 cloud, no sign-up, no telemetry. Every byte of a user's financial data lives
 **encrypted on their device** and never leaves it.
@@ -25,7 +25,7 @@ One-liner: *A private money ledger that lives entirely on your phone — track n
 worth, budgets, and goals without a single server ever seeing your data.*
 
 The name mark is a serif **"K."** (Fraunces) with a single gold period; the app
-was formerly codenamed "PersonalFinance / Finances" and was renamed to **Kard**
+was formerly codenamed "PersonalFinance / Finances" and was renamed to **Kredits**
 during pre-release.
 
 ---
@@ -54,7 +54,7 @@ These are identity, not features. They shape — and constrain — the business 
   post-data-breach sentiment).
 - **Cash- and gold-heavy / underbanked economies**, especially **MENA, South
   Asia, and similar markets** where (a) bank **SMS alerts are ubiquitous** and
-  (b) **physical gold/silver** is a normal store of wealth. Kard treats bank-SMS
+  (b) **physical gold/silver** is a normal store of wealth. Kredits treats bank-SMS
   auto-import and gold (XAU/XAG) as first-class — incumbents don't.
 - **Multi-currency people** — expats, freelancers paid in several currencies,
   people who hold assets across denominations.
@@ -142,7 +142,7 @@ entitlement server, no usage data).
 ## 8. Current status (pre-release)
 
 - Feature-complete enough to be **"building & releasing soon."**
-- Rename to **Kard** and full brand application (icon, splash, favicon) are done.
+- Rename to **Kredits** and full brand application (icon, splash, favicon) are done.
 - **No monetization is implemented** — no in-app purchases, no paywall, no ads,
   no pricing. Monetization is a **greenfield decision**, which is exactly what the
   companion strategy session is for.
@@ -165,7 +165,7 @@ monetization constraint. Frame the discussion around this:
   "verifiably can't phone home" claim, or (c) a **hybrid** (free offline core +
   a paid unlock validated once, at a moment where network is allowed).
 - **Recurring revenue is unnatural here.** Cloud apps justify subscriptions with
-  sync + servers; Kard has neither. A subscription would need a *different*
+  sync + servers; Kredits has neither. A subscription would need a *different*
   justification (ongoing bank-SMS template updates? new features via app updates?)
   and would likely read as user-hostile without a server story.
 
@@ -195,17 +195,17 @@ monetization constraint. Frame the discussion around this:
 
 ## 10. Competitive landscape (for positioning)
 
-- **Mint** — shut down; was cloud + data-monetized. Kard is the deliberate opposite.
-- **YNAB** — cloud, ~$109/yr subscription, sync-based. Kard = no cloud, likely no
+- **Mint** — shut down; was cloud + data-monetized. Kredits is the deliberate opposite.
+- **YNAB** — cloud, ~$109/yr subscription, sync-based. Kredits = no cloud, likely no
   subscription.
-- **Monarch / Copilot** — premium cloud subscriptions, bank-linking (Plaid). Kard
+- **Monarch / Copilot** — premium cloud subscriptions, bank-linking (Plaid). Kredits
   has no bank-linking by design (privacy) and no recurring server cost.
-- **Actual Budget** — open-source, local-first but sync-oriented / self-host. Kard
+- **Actual Budget** — open-source, local-first but sync-oriented / self-host. Kredits
   is closer in spirit but consumer-polished and truly no-server, with SMS import.
-- **Wallet (BudgetBakers) / Spendee** — freemium cloud. Kard's edge is offline +
+- **Wallet (BudgetBakers) / Spendee** — freemium cloud. Kredits' edge is offline +
   SMS + Arabic + gold.
 
-Kard's one-sentence position: *the only polished consumer finance app that is
+Kredits' one-sentence position: *the only polished consumer finance app that is
 verifiably offline, needs no account, and auto-captures bank SMS in English and
 Arabic.*
 

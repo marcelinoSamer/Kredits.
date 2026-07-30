@@ -22,13 +22,13 @@ export interface PolicyContent {
 
 const en: PolicyContent = {
   intro:
-    'Kard is a 100% offline personal finance app. We do not collect, transmit, ' +
+    'Kredits is a 100% offline personal finance app. We do not collect, transmit, ' +
     'or have access to any of your data — everything you enter stays encrypted ' +
     'on your device. This policy explains exactly what that means.',
   sections: [
     {
       heading: 'In short',
-      body: 'Kard has no servers, no account system, and no analytics. Your financial data never leaves your device. We cannot see it, and neither can anyone else.',
+      body: 'Kredits has no servers, no account system, and no analytics. Your financial data never leaves your device. We cannot see it, and neither can anyone else.',
     },
     {
       heading: 'Information we collect',
@@ -40,19 +40,19 @@ const en: PolicyContent = {
     },
     {
       heading: 'Permissions',
-      body: 'Notifications are used only to show local budget and goal alerts on your device — nothing is sent to a server. Face ID / biometrics and your PIN are used only to lock the app; your biometric data is handled by the operating system and never seen by Kard. On some Android versions, and only with your explicit permission, Kard can read bank SMS on your device to help you log transactions — those messages are parsed entirely on your device and are never uploaded or shared. You can use the app fully without granting SMS access.',
+      body: 'Notifications are used only to show local budget and goal alerts on your device — nothing is sent to a server. Face ID / biometrics and your PIN are used only to lock the app; your biometric data is handled by the operating system and never seen by Kredits. On some Android versions, and only with your explicit permission, Kredits can read bank SMS on your device to help you log transactions — those messages are parsed entirely on your device and are never uploaded or shared. You can use the app fully without granting SMS access.',
     },
     {
       heading: 'Backups',
-      body: 'Kard can create an encrypted backup file that you protect with a passphrase. The file is created on your device and shared only where you choose (for example, your own files or cloud storage). Kard has no access to it, and the passphrase is never stored — if you lose it, the backup cannot be recovered.',
+      body: 'Kredits can create an encrypted backup file that you protect with a passphrase. The file is created on your device and shared only where you choose (for example, your own files or cloud storage). Kredits has no access to it, and the passphrase is never stored — if you lose it, the backup cannot be recovered.',
     },
     {
       heading: 'Third parties',
-      body: 'Kard contains no advertising SDKs, analytics SDKs, or trackers, and shares no data with third parties — because no data leaves your device to share.',
+      body: 'Kredits contains no advertising SDKs, analytics SDKs, or trackers, and shares no data with third parties — because no data leaves your device to share.',
     },
     {
       heading: 'Children’s privacy',
-      body: 'Kard is not directed at children, and in any case collects no personal information from anyone.',
+      body: 'Kredits is not directed at children, and in any case collects no personal information from anyone.',
     },
     {
       heading: 'Your control over your data',
@@ -71,13 +71,13 @@ const en: PolicyContent = {
 
 const ar: PolicyContent = {
   intro:
-    'Kard تطبيق لإدارة الأموال يعمل دون اتصال بالإنترنت بنسبة 100%. نحن لا نجمع ' +
+    'Kredits تطبيق لإدارة الأموال يعمل دون اتصال بالإنترنت بنسبة 100%. نحن لا نجمع ' +
     'أيّ بيانات عنك ولا ننقلها ولا نصل إليها — كل ما تُدخله يبقى مشفّرًا على ' +
     'جهازك. توضّح هذه السياسة ذلك بالتفصيل.',
   sections: [
     {
       heading: 'باختصار',
-      body: 'لا تملك Kard أيّ خوادم، ولا نظام حسابات، ولا أدوات تحليل. بياناتك المالية لا تغادر جهازك أبدًا. لا يمكننا رؤيتها، ولا يمكن لأي شخص آخر ذلك.',
+      body: 'لا تملك Kredits أيّ خوادم، ولا نظام حسابات، ولا أدوات تحليل. بياناتك المالية لا تغادر جهازك أبدًا. لا يمكننا رؤيتها، ولا يمكن لأي شخص آخر ذلك.',
     },
     {
       heading: 'المعلومات التي نجمعها',
@@ -89,19 +89,19 @@ const ar: PolicyContent = {
     },
     {
       heading: 'الأذونات',
-      body: 'تُستخدم الإشعارات فقط لعرض تنبيهات الميزانيات والأهداف محليًا على جهازك، ولا يُرسَل شيء إلى أي خادم. وتُستخدم بصمة الوجه/القياسات الحيوية ورمز PIN لقفل التطبيق فقط، ويتولّى نظام التشغيل التعامل مع بياناتك الحيوية دون أن تراها Kard. وفي بعض إصدارات أندرويد، وبعد إذنك الصريح فقط، يمكن لـ Kard قراءة رسائل البنك على جهازك لمساعدتك في تسجيل المعاملات — وتُحلَّل هذه الرسائل بالكامل على جهازك ولا تُرفع أو تُشارك أبدًا. ويمكنك استخدام التطبيق بالكامل دون منح إذن الرسائل.',
+      body: 'تُستخدم الإشعارات فقط لعرض تنبيهات الميزانيات والأهداف محليًا على جهازك، ولا يُرسَل شيء إلى أي خادم. وتُستخدم بصمة الوجه/القياسات الحيوية ورمز PIN لقفل التطبيق فقط، ويتولّى نظام التشغيل التعامل مع بياناتك الحيوية دون أن تراها Kredits. وفي بعض إصدارات أندرويد، وبعد إذنك الصريح فقط، يمكن لـ Kredits قراءة رسائل البنك على جهازك لمساعدتك في تسجيل المعاملات — وتُحلَّل هذه الرسائل بالكامل على جهازك ولا تُرفع أو تُشارك أبدًا. ويمكنك استخدام التطبيق بالكامل دون منح إذن الرسائل.',
     },
     {
       heading: 'النسخ الاحتياطي',
-      body: 'يمكن لـ Kard إنشاء ملف نسخ احتياطي مشفّر تحميه بعبارة مرور. يُنشأ الملف على جهازك ويُشارك فقط حيثما تختار (مثل ملفاتك أو تخزينك السحابي). لا تملك Kard أيّ وصول إليه، ولا تُخزَّن عبارة المرور مطلقًا — وإذا فقدتها فلا يمكن استعادة النسخة.',
+      body: 'يمكن لـ Kredits إنشاء ملف نسخ احتياطي مشفّر تحميه بعبارة مرور. يُنشأ الملف على جهازك ويُشارك فقط حيثما تختار (مثل ملفاتك أو تخزينك السحابي). لا تملك Kredits أيّ وصول إليه، ولا تُخزَّن عبارة المرور مطلقًا — وإذا فقدتها فلا يمكن استعادة النسخة.',
     },
     {
       heading: 'الأطراف الخارجية',
-      body: 'لا تتضمّن Kard أدوات إعلانات أو تحليل أو تتبّع، ولا تشارك أيّ بيانات مع أي طرف ثالث، لأنه لا توجد بيانات تغادر جهازك أصلًا.',
+      body: 'لا تتضمّن Kredits أدوات إعلانات أو تحليل أو تتبّع، ولا تشارك أيّ بيانات مع أي طرف ثالث، لأنه لا توجد بيانات تغادر جهازك أصلًا.',
     },
     {
       heading: 'خصوصية الأطفال',
-      body: 'Kard غير موجَّه للأطفال، وهو على أيّ حال لا يجمع أيّ معلومات شخصية من أي شخص.',
+      body: 'Kredits غير موجَّه للأطفال، وهو على أيّ حال لا يجمع أيّ معلومات شخصية من أي شخص.',
     },
     {
       heading: 'تحكّمك في بياناتك',

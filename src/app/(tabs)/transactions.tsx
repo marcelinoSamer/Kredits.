@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
 import { RefreshControl, SectionList, StyleSheet, View } from 'react-native';
 import { router } from 'expo-router';
-import { FAB, SegmentedButtons, Searchbar, useTheme } from 'react-native-paper';
+import { FAB, Searchbar, useTheme } from 'react-native-paper';
 
 import { MoneyText } from '@/components/MoneyText';
 import { Eyebrow } from '@/components/Eyebrow';
@@ -10,6 +10,7 @@ import { Card } from '@/components/Card';
 import { Divider } from '@/components/Divider';
 import { TransactionRow } from '@/components/TransactionRow';
 import { EmptyState } from '@/components/EmptyState';
+import { SegmentTabs } from '@/components/SegmentTabs';
 import { t } from '@/i18n';
 import { listTransactions, type TransactionView } from '@/db/repositories/transactions';
 import { useAsyncData } from '@/state/dataVersion';
@@ -95,10 +96,10 @@ export default function TransactionsScreen() {
           style={[styles.search, { backgroundColor: theme.colors.surface, borderRadius: radius.md }]}
           inputStyle={styles.searchInput}
         />
-        <SegmentedButtons
+        <SegmentTabs
           value={kind}
-          onValueChange={(v) => setKind(v as KindFilter)}
-          buttons={[
+          onChange={setKind}
+          options={[
             { value: 'all', label: t('common.all') },
             { value: 'income', label: t('tx.income') },
             { value: 'expense', label: t('tx.expense') },

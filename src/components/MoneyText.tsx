@@ -48,7 +48,7 @@ export function MoneyText({
   const theme = useTheme<AppTheme>();
   const ar = getLocale() === 'ar';
 
-  let color: string | undefined;
+  let color: string = theme.colors.onSurface;
   if (tone === 'gold') {
     color = theme.semantic.gold;
   } else if (colorBySign) {

@@ -351,12 +351,12 @@ export default {
     skip: 'Skip',
     next: 'Next',
     back: 'Back',
-    start: 'Enter Kard',
+    start: 'Enter Kredits',
     privacy: 'Privacy Policy',
     p1: {
       eyebrow: 'The Offline Ledger',
       title: 'Your money, sealed on this device.',
-      body: 'No accounts. No cloud. No sign-up. Every figure you enter is encrypted and stays on your phone — Kard can’t send it anywhere.',
+      body: 'No accounts. No cloud. No sign-up. Every figure you enter is encrypted and stays on your phone — Kredits can’t send it anywhere.',
     },
     p2: {
       eyebrow: 'Track everything',

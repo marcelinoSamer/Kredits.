@@ -1,10 +1,11 @@
 import { useMemo, useState, type ReactNode } from 'react';
 import { Pressable, StyleSheet, View, type LayoutChangeEvent } from 'react-native';
 import { router } from 'expo-router';
-import { Banner, SegmentedButtons, Text, useTheme } from 'react-native-paper';
+import { Banner, Text, useTheme } from 'react-native-paper';
 import { PieChart, LineChart } from 'react-native-gifted-charts';
 
 import { Screen } from '@/components/Screen';
+import { SegmentTabs } from '@/components/SegmentTabs';
 import { Card } from '@/components/Card';
 import { Divider } from '@/components/Divider';
 import { MoneyText } from '@/components/MoneyText';
@@ -174,10 +175,10 @@ export default function AnalyticsScreen() {
 
   return (
     <Screen refreshing={loading} onRefresh={reload}>
-      <SegmentedButtons
+      <SegmentTabs
         value={period}
-        onValueChange={(v) => setPeriod(v as Period)}
-        buttons={[
+        onChange={setPeriod}
+        options={[
           { value: 'month', label: t('dashboard.thisMonth') },
           { value: 'quarter', label: t('analytics.period3M') },
           { value: 'year', label: t('analytics.period12M') },

@@ -1,40 +1,40 @@
 {
   "expo": {
-    "name": "Kard",
-    "slug": "kard",
+    "name": "Kredits.",
+    "slug": "kredits",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/images/kard-icon-dark.png",
-    "scheme": "kard",
+    "icon": "./assets/images/kredits-icon-dark.png",
+    "scheme": "kredits",
     "userInterfaceStyle": "automatic",
     "ios": {
       "icon": {
-        "dark": "./assets/images/kard-icon-dark.png",
-        "light": "./assets/images/kard-icon-light.png",
-        "tinted": "./assets/images/kard-icon-tinted.png"
+        "dark": "./assets/images/kredits-icon-dark.png",
+        "light": "./assets/images/kredits-icon-light.png",
+        "tinted": "./assets/images/kredits-icon-tinted.png"
       },
-      "bundleIdentifier": "com.lino.finances",
+      "bundleIdentifier": "app.kredits.finances",
       "supportsTablet": true,
       "config": {
         "usesNonExemptEncryption": false
       }
     },
     "android": {
-      "package": "com.lino.finances",
+      "package": "app.kredits.finances",
       "permissions": [
         "android.permission.READ_SMS",
         "android.permission.RECEIVE_SMS"
       ],
       "adaptiveIcon": {
         "backgroundColor": "#0C1311",
-        "foregroundImage": "./assets/images/kard-adaptive-fg.png",
-        "monochromeImage": "./assets/images/kard-adaptive-mono.png"
+        "foregroundImage": "./assets/images/kredits-adaptive-fg.png",
+        "monochromeImage": "./assets/images/kredits-adaptive-mono.png"
       },
       "predictiveBackGestureEnabled": false
     },
     "web": {
       "output": "static",
-      "favicon": "./assets/images/kard-favicon.png"
+      "favicon": "./assets/images/kredits-favicon.png"
     },
     "plugins": [
       "expo-router",
@@ -42,7 +42,7 @@
         "expo-splash-screen",
         {
           "backgroundColor": "#0C1311",
-          "image": "./assets/images/kard-splash.png",
+          "image": "./assets/images/kredits-splash.png",
           "imageWidth": 200,
           "resizeMode": "contain"
         }
@@ -63,7 +63,9 @@
           "faceIDPermission": "Use Face ID to unlock your finances."
         }
       ],
-      "expo-sharing"
+      "expo-sharing",
+      "./plugins/withReleaseSigning",
+      "./plugins/withGradleProjectName"
     ],
     "experiments": {
       "typedRoutes": true,
