@@ -12,6 +12,10 @@ export interface AssetInput {
   currency: CurrencyCode;
   valued_at: number;
   note?: string | null;
+  /** Bank-cert only. */
+  interest_rate?: number | null;
+  starts_at?: number | null;
+  matures_at?: number | null;
 }
 
 export async function listAssets(): Promise<Asset[]> {
@@ -28,8 +32,8 @@ export async function createAsset(input: AssetInput): Promise<string> {
   const db = await getDb();
   const id = newId();
   await db.runAsync(
-    `INSERT INTO assets (id, name, type, quantity, unit, value, currency, valued_at, note, created_at)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    `INSERT INTO assets (id, name, type, quantity, unit, value, currency, valued_at, note, created_at, interest_rate, starts_at, matures_at)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     [
       id,
       input.name,
@@ -41,6 +45,9 @@ export async function createAsset(input: AssetInput): Promise<string> {
       input.valued_at,
       input.note ?? null,
       Date.now(),
+      input.interest_rate ?? null,
+      input.starts_at ?? null,
+      input.matures_at ?? null,
     ],
   );
   return id;
@@ -49,7 +56,7 @@ export async function createAsset(input: AssetInput): Promise<string> {
 export async function updateAsset(id: string, input: AssetInput): Promise<void> {
   const db = await getDb();
   await db.runAsync(
-    `UPDATE assets SET name = ?, type = ?, quantity = ?, unit = ?, value = ?, currency = ?, valued_at = ?, note = ? WHERE id = ?`,
+    `UPDATE assets SET name = ?, type = ?, quantity = ?, unit = ?, value = ?, currency = ?, valued_at = ?, note = ?, interest_rate = ?, starts_at = ?, matures_at = ? WHERE id = ?`,
     [
       input.name,
       input.type,
@@ -59,6 +66,9 @@ export async function updateAsset(id: string, input: AssetInput): Promise<void> 
       input.currency,
       input.valued_at,
       input.note ?? null,
+      input.interest_rate ?? null,
+      input.starts_at ?? null,
+      input.matures_at ?? null,
       id,
     ],
   );

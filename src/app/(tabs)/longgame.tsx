@@ -1,9 +1,10 @@
 import { useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { router } from 'expo-router';
-import { FAB, SegmentedButtons, useTheme } from 'react-native-paper';
+import { FAB, useTheme } from 'react-native-paper';
 
 import { Screen } from '@/components/Screen';
+import { SegmentTabs } from '@/components/SegmentTabs';
 import { BudgetList } from '@/components/planning/BudgetList';
 import { GoalList } from '@/components/planning/GoalList';
 import { BoxList } from '@/components/planning/BoxList';
@@ -25,10 +26,10 @@ export default function LongGameScreen() {
   return (
     <View style={styles.flex}>
       <Screen>
-        <SegmentedButtons
+        <SegmentTabs
           value={segment}
-          onValueChange={(v) => setSegment(v as Segment)}
-          buttons={[
+          onChange={setSegment}
+          options={[
             { value: 'budgets', label: t('plan.budgets') },
             { value: 'goals', label: t('plan.goals') },
             { value: 'boxes', label: t('plan.events') },

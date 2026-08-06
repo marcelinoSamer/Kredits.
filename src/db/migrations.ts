@@ -223,8 +223,24 @@ CREATE INDEX idx_event_boxes_account ON event_boxes(account_id);
 `);
 };
 
+// v4: credit pockets + bank-certificate assets.
+//  - Credit pockets are accounts of type 'credit' with a limit and a repayment
+//    grace window; spending them is a liability (negative balance = owed).
+//  - Bank certificates are assets of type 'bank_cert' with an optional interest
+//    rate and a maturity date (blocked capital).
+// Columns are nullable so every existing row is untouched.
+const migration4: Migration = async (db) => {
+  await db.execAsync(`
+ALTER TABLE accounts ADD COLUMN credit_limit REAL;
+ALTER TABLE accounts ADD COLUMN grace_days INTEGER;
+ALTER TABLE assets ADD COLUMN interest_rate REAL;
+ALTER TABLE assets ADD COLUMN starts_at INTEGER;
+ALTER TABLE assets ADD COLUMN matures_at INTEGER;
+`);
+};
+
 // Append future migrations here; index in the array == target user_version.
-const migrations: Migration[] = [migration1, migration2, migration3];
+const migrations: Migration[] = [migration1, migration2, migration3, migration4];
 
 export async function runMigrations(db: SQLiteDatabase): Promise<void> {
   const row = await db.getFirstAsync<{ user_version: number }>('PRAGMA user_version');

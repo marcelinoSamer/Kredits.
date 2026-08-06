@@ -68,7 +68,9 @@ export function BottomSheet({ children, onClose, contentStyle }: Props) {
 
   return (
     <View style={StyleSheet.absoluteFill}>
-      <Animated.View style={[StyleSheet.absoluteFill, styles.scrim, scrimStyle]}>
+      <Animated.View
+        style={[StyleSheet.absoluteFill, { backgroundColor: theme.colors.scrim }, scrimStyle]}
+      >
         <Pressable style={StyleSheet.absoluteFill} onPress={close} />
       </Animated.View>
 
@@ -97,7 +99,6 @@ export function BottomSheet({ children, onClose, contentStyle }: Props) {
 }
 
 const styles = StyleSheet.create({
-  scrim: { backgroundColor: '#000' },
   panel: {
     position: 'absolute',
     left: 0,

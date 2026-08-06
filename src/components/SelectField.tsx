@@ -1,8 +1,12 @@
 import { useState } from 'react';
-import { ScrollView } from 'react-native';
-import { Button, Dialog, Portal, RadioButton, TextInput } from 'react-native-paper';
+import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { Portal, TextInput, useTheme } from 'react-native-paper';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
 
-import { t } from '@/i18n';
+import { BottomSheet } from '@/components/anim/BottomSheet';
+import { AppText } from '@/components/AppText';
+import { Divider } from '@/components/Divider';
+import type { AppTheme } from '@/theme';
 
 export interface SelectOption {
   key: string;
@@ -19,8 +23,10 @@ interface Props {
   disabled?: boolean;
 }
 
-/** A read-only TextInput that opens a dialog with a single-choice list. */
+/** A read-only TextInput that opens a vault-ledger bottom sheet with a single-choice list. */
 export function SelectField({ label, value, options, onChange, placeholder, disabled }: Props) {
+  const theme = useTheme<AppTheme>();
+  const { spacing } = theme.tokens;
   const [open, setOpen] = useState(false);
   const selected = options.find((o) => o.key === value);
 
@@ -36,29 +42,67 @@ export function SelectField({ label, value, options, onChange, placeholder, disa
         onPressIn={() => !disabled && setOpen(true)}
         showSoftInputOnFocus={false}
       />
-      <Portal>
-        <Dialog visible={open} onDismiss={() => setOpen(false)}>
-          <Dialog.Title>{label}</Dialog.Title>
-          <Dialog.ScrollArea>
-            <ScrollView style={{ maxHeight: 360 }}>
-              <RadioButton.Group
-                value={value ?? ''}
-                onValueChange={(v) => {
-                  onChange(v);
-                  setOpen(false);
-                }}
+      {open && (
+        <Portal>
+          <BottomSheet onClose={() => setOpen(false)}>
+            <View style={{ paddingHorizontal: spacing.xl, paddingBottom: spacing.sm }}>
+              <AppText
+                role="title"
+                variant="titleLarge"
+                style={{ fontFamily: theme.tokens.font.serif.semibold }}
               >
-                {options.map((o) => (
-                  <RadioButton.Item key={o.key} value={o.key} label={o.label} />
-                ))}
-              </RadioButton.Group>
+                {label}
+              </AppText>
+            </View>
+            <ScrollView
+              style={styles.list}
+              contentContainerStyle={{ paddingHorizontal: spacing.xl, paddingBottom: spacing.lg }}
+            >
+              {options.map((o, i) => {
+                const active = o.key === value;
+                return (
+                  <View key={o.key}>
+                    {i > 0 && <Divider />}
+                    <Pressable
+                      onPress={() => {
+                        onChange(o.key);
+                        setOpen(false);
+                      }}
+                      style={({ pressed }) => [
+                        styles.row,
+                        { paddingVertical: spacing.md, gap: spacing.md },
+                        pressed && { opacity: 0.6 },
+                      ]}
+                    >
+                      <View style={styles.rowBody}>
+                        <AppText role={active ? 'title' : 'body'}>{o.label}</AppText>
+                        {o.description && (
+                          <AppText role="muted" variant="bodySmall">
+                            {o.description}
+                          </AppText>
+                        )}
+                      </View>
+                      {active && (
+                        <MaterialCommunityIcons
+                          name="check-circle"
+                          size={20}
+                          color={theme.colors.primary}
+                        />
+                      )}
+                    </Pressable>
+                  </View>
+                );
+              })}
             </ScrollView>
-          </Dialog.ScrollArea>
-          <Dialog.Actions>
-            <Button onPress={() => setOpen(false)}>{t('common.close')}</Button>
-          </Dialog.Actions>
-        </Dialog>
-      </Portal>
+          </BottomSheet>
+        </Portal>
+      )}
     </>
   );
 }
+
+const styles = StyleSheet.create({
+  list: { maxHeight: 420 },
+  row: { flexDirection: 'row', alignItems: 'center' },
+  rowBody: { flex: 1, gap: 2 },
+});

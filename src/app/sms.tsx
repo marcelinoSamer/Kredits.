@@ -3,7 +3,6 @@ import { Alert, View, StyleSheet } from 'react-native';
 import { Stack, router } from 'expo-router';
 import {
   Button,
-  Card,
   Chip,
   IconButton,
   SegmentedButtons,
@@ -13,6 +12,7 @@ import {
 } from 'react-native-paper';
 
 import { Screen } from '@/components/Screen';
+import { Card } from '@/components/Card';
 import { EmptyState } from '@/components/EmptyState';
 import { AmountInput } from '@/components/AmountInput';
 import { SelectField, type SelectOption } from '@/components/SelectField';
@@ -172,37 +172,35 @@ export default function SmsScreen() {
           ...cats.map((c) => ({ key: c.id, label: categoryLabel(c) })),
         ];
         return (
-          <Card key={p.id} mode="contained">
-            <Card.Content style={{ gap: 8 }}>
-              <View style={styles.row}>
-                <Text variant="labelLarge">{p.sender}</Text>
-                <Chip compact>{Math.round(p.confidence * 100)}%</Chip>
-              </View>
-              <Text variant="bodySmall" style={{ color: theme.colors.onSurfaceVariant }}>
-                {formatDate(p.received_at)}
-              </Text>
-              <Text variant="bodySmall" numberOfLines={3}>
-                {p.raw_body}
-              </Text>
+          <Card key={p.id} style={{ gap: 8 }}>
+            <View style={styles.row}>
+              <Text variant="labelLarge">{p.sender}</Text>
+              <Chip compact>{Math.round(p.confidence * 100)}%</Chip>
+            </View>
+            <Text variant="bodySmall" style={{ color: theme.colors.onSurfaceVariant }}>
+              {formatDate(p.received_at)}
+            </Text>
+            <Text variant="bodySmall" numberOfLines={3}>
+              {p.raw_body}
+            </Text>
 
-              <SegmentedButtons
-                value={d.direction}
-                onValueChange={(v) => update(p.id, { direction: v as Direction })}
-                buttons={[
-                  { value: 'out', label: t('tx.expense') },
-                  { value: 'in', label: t('tx.income') },
-                ]}
-              />
-              <AmountInput value={d.amount} onChangeText={(v) => update(p.id, { amount: v })} currency={accounts.find((a) => a.id === d.accountId)?.currency} />
-              <SelectField label={t('tx.account')} value={d.accountId} onChange={(k) => update(p.id, { accountId: k })} options={accountOptions} />
-              <SelectField label={t('common.category')} value={d.categoryId ?? ''} onChange={(k) => update(p.id, { categoryId: k || null })} options={catOptions} />
+            <SegmentedButtons
+              value={d.direction}
+              onValueChange={(v) => update(p.id, { direction: v as Direction })}
+              buttons={[
+                { value: 'out', label: t('tx.expense') },
+                { value: 'in', label: t('tx.income') },
+              ]}
+            />
+            <AmountInput value={d.amount} onChangeText={(v) => update(p.id, { amount: v })} currency={accounts.find((a) => a.id === d.accountId)?.currency} />
+            <SelectField label={t('tx.account')} value={d.accountId} onChange={(k) => update(p.id, { accountId: k })} options={accountOptions} />
+            <SelectField label={t('common.category')} value={d.categoryId ?? ''} onChange={(k) => update(p.id, { categoryId: k || null })} options={catOptions} />
 
-              <View style={styles.actions}>
-                <Button mode="text" onPress={() => dismiss(p)}>{t('common.dismiss')}</Button>
-                <Button mode="text" onPress={() => saveTemplate(p)}>{t('sms.saveTemplate')}</Button>
-                <Button mode="contained" onPress={() => confirm(p)}>{t('common.confirm')}</Button>
-              </View>
-            </Card.Content>
+            <View style={styles.actions}>
+              <Button mode="text" onPress={() => dismiss(p)}>{t('common.dismiss')}</Button>
+              <Button mode="text" onPress={() => saveTemplate(p)}>{t('sms.saveTemplate')}</Button>
+              <Button mode="contained" onPress={() => confirm(p)}>{t('common.confirm')}</Button>
+            </View>
           </Card>
         );
       })}

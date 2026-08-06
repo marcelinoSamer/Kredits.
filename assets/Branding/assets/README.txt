@@ -1,5 +1,8 @@
-KARD — VAULT LEDGER IDENTITY v1.0
-=================================
+KREDITS — VAULT LEDGER IDENTITY v1.0
+====================================
+Wordmark: "Kredits." in Fraunces 600, gold full stop.
+Monogram / app icon: "K." on ink.
+
 SVG  — vector masters. Text-based: they load Fraunces from Google Fonts,
        so they render correctly in browsers. For Illustrator/Figma,
        install Fraunces (fonts.google.com/specimen/Fraunces) or use the PNGs.

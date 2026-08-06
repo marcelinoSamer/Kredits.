@@ -37,5 +37,6 @@ export function accountTypeLabel(type: AccountType): string {
 }
 
 export function assetTypeLabel(type: AssetType): string {
+  if (type === 'bank_cert') return t('asset.typeBankCert');
   return t(`asset.type${cap(type)}`);
 }

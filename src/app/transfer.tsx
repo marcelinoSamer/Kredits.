@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Alert } from 'react-native';
-import { router } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import { HelperText, TextInput } from 'react-native-paper';
 
 import { EditorScaffold } from '@/components/register/EditorScaffold';
@@ -19,6 +19,8 @@ import type { Account } from '@/db/schema';
 import type { FxRate } from '@/money/fx';
 
 export default function TransferScreen() {
+  // `to`/`from` preselect a side (e.g. repaying a credit pocket → to = card).
+  const params = useLocalSearchParams<{ to?: string; from?: string }>();
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [rates, setRates] = useState<FxRate[]>([]);
   const [fromId, setFromId] = useState<string | null>(null);
@@ -33,10 +35,13 @@ export default function TransferScreen() {
     Promise.all([listAccounts(false), listRates()]).then(([accs, rs]) => {
       setAccounts(accs);
       setRates(rs);
-      if (accs.length) setFromId((p) => p ?? accs[0].id);
-      if (accs.length > 1) setToId((p) => p ?? accs[1].id);
+      const preTo = params.to && accs.some((a) => a.id === params.to) ? params.to : null;
+      const preFrom = params.from && accs.some((a) => a.id === params.from) ? params.from : null;
+      const firstOther = accs.find((a) => a.id !== preTo && a.id !== preFrom);
+      setToId((p) => p ?? preTo ?? (accs.length > 1 ? accs[1].id : null));
+      setFromId((p) => p ?? preFrom ?? (preTo ? firstOther?.id ?? null : accs[0]?.id ?? null));
     });
-  }, []);
+  }, [params.to, params.from]);
 
   const from = accounts.find((a) => a.id === fromId) ?? null;
   const to = accounts.find((a) => a.id === toId) ?? null;

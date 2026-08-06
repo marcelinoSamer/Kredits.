@@ -110,6 +110,10 @@ export default function RootLayout() {
           headerStyle: { backgroundColor: paper.colors.background },
           headerShadowVisible: false,
           headerTintColor: paper.colors.onSurface,
+          // iOS otherwise labels the back button with the previous route's
+          // title — which for the tab group is the raw "(tabs)" name. Show just
+          // the chevron everywhere.
+          headerBackButtonDisplayMode: 'minimal',
           headerTitleStyle: {
             fontFamily: tokens.font.serif.semibold,
             fontSize: 20,

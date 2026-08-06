@@ -24,7 +24,7 @@ import { bumpData } from '@/state/dataVersion';
 import type { Account, Category, TxKind } from '@/db/schema';
 
 export default function TransactionEditScreen() {
-  const params = useLocalSearchParams<{ id?: string; kind?: TxKind; boxId?: string }>();
+  const params = useLocalSearchParams<{ id?: string; kind?: TxKind; boxId?: string; accountId?: string }>();
   const editing = !!params.id;
 
   const [accounts, setAccounts] = useState<Account[]>([]);
@@ -64,12 +64,17 @@ export default function TransactionEditScreen() {
               return;
             }
           }
+          // Preselect a specific pocket (e.g. spending on a credit card).
+          if (params.accountId && accs.some((a) => a.id === params.accountId)) {
+            setAccountId((prev) => prev ?? params.accountId!);
+            return;
+          }
           const firstNormal = accs.find((a) => !boxByAccount.has(a.id) && a.archived === 0);
           if (firstNormal) setAccountId((prev) => prev ?? firstNormal.id);
         }
       },
     );
-  }, [params.id, params.boxId]);
+  }, [params.id, params.boxId, params.accountId]);
 
   useEffect(() => {
     if (!params.id) return;

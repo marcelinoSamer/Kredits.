@@ -1,7 +1,9 @@
 import { View, StyleSheet } from 'react-native';
 import { router } from 'expo-router';
-import { Card, ProgressBar, Text, useTheme } from 'react-native-paper';
+import { ProgressBar, useTheme } from 'react-native-paper';
 
+import { Card } from '@/components/Card';
+import { AppText } from '@/components/AppText';
 import { MoneyText } from '@/components/MoneyText';
 import { EmptyState } from '@/components/EmptyState';
 import { t } from '@/i18n';
@@ -45,33 +47,31 @@ export function BudgetList() {
         return (
           <Card
             key={st.budget.id}
-            mode="contained"
             onPress={() => router.push({ pathname: '/budget-edit', params: { id: st.budget.id } })}
+            style={{ gap: 6 }}
           >
-            <Card.Content style={{ gap: 6 }}>
-              <View style={styles.row}>
-                <Text variant="titleMedium">{name}</Text>
-                <Text variant="bodySmall" style={{ color: theme.colors.onSurfaceVariant }}>
-                  {Math.round(st.percent)}%
-                </Text>
-              </View>
-              <ProgressBar progress={Math.min(1, st.percent / 100)} color={color} />
-              <View style={styles.row}>
-                <MoneyText value={st.spent} currency={st.budget.currency} variant="bodyMedium" />
-                <Text style={{ color: theme.colors.onSurfaceVariant }}>
-                  / {st.budget.limit_amount}
-                </Text>
-              </View>
-              <Text
-                variant="bodySmall"
-                style={{ color: st.over ? theme.semantic.expense : theme.semantic.neutral }}
-              >
-                {st.over ? t('budgets.overBudget') : `${t('budgets.remaining')}: `}
-                {!st.over && (
-                  <MoneyText value={remaining} currency={st.budget.currency} variant="bodySmall" />
-                )}
-              </Text>
-            </Card.Content>
+            <View style={styles.row}>
+              <AppText role="title" variant="titleMedium">
+                {name}
+              </AppText>
+              <AppText role="muted" variant="bodySmall">
+                {Math.round(st.percent)}%
+              </AppText>
+            </View>
+            <ProgressBar progress={Math.min(1, st.percent / 100)} color={color} />
+            <View style={styles.row}>
+              <MoneyText value={st.spent} currency={st.budget.currency} variant="bodyMedium" />
+              <AppText role="muted">/ {st.budget.limit_amount}</AppText>
+            </View>
+            <AppText
+              variant="bodySmall"
+              style={{ color: st.over ? theme.semantic.expense : theme.colors.onSurfaceVariant }}
+            >
+              {st.over ? t('budgets.overBudget') : `${t('budgets.remaining')}: `}
+              {!st.over && (
+                <MoneyText value={remaining} currency={st.budget.currency} variant="bodySmall" />
+              )}
+            </AppText>
           </Card>
         );
       })}

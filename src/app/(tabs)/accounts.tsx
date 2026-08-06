@@ -1,22 +1,35 @@
 import { useMemo, useState } from 'react';
 import { Pressable, RefreshControl, ScrollView, StyleSheet, View } from 'react-native';
 import { router } from 'expo-router';
-import { FAB, SegmentedButtons, useTheme } from 'react-native-paper';
+import { FAB, useTheme } from 'react-native-paper';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 
 import { MoneyText } from '@/components/MoneyText';
+import { SegmentTabs } from '@/components/SegmentTabs';
 import { Eyebrow } from '@/components/Eyebrow';
 import { AppText } from '@/components/AppText';
 import { Card } from '@/components/Card';
 import { IconBadge } from '@/components/IconBadge';
 import { Divider } from '@/components/Divider';
 import { EmptyState } from '@/components/EmptyState';
-import { t } from '@/i18n';
+import { getLocale, t } from '@/i18n';
 import { assetTypeLabel, accountTypeLabel } from '@/ui/labels';
 import { ASSET_TYPE_META } from '@/ui/meta';
+import { formatDate } from '@/ui/date';
+import { formatMoney } from '@/money/format';
+import { computeCert } from '@/money/cert';
 import { usePortfolio } from '@/state/portfolio';
+import { useAsyncData } from '@/state/dataVersion';
+import { listCreditSummaries } from '@/db/repositories/credit';
+import type { AccountWithBalance } from '@/db/repositories/accounts';
+import type { CreditStatus } from '@/money/credit';
+import type { Asset } from '@/db/schema';
 import type { CurrencyCode } from '@/money/currencies';
 import type { AppTheme } from '@/theme';
+
+function money(v: number, c: CurrencyCode): string {
+  return formatMoney(v, c, { arabicDigits: getLocale() === 'ar' });
+}
 
 type Segment = 'containers' | 'assets';
 
@@ -25,6 +38,15 @@ export default function AccountsScreen() {
   const { spacing, radius } = theme.tokens;
   const [segment, setSegment] = useState<Segment>('containers');
   const { data: pf, loading, reload } = usePortfolio();
+
+  // Credit pockets carry a repayment schedule; load their derived state so rows
+  // can show owed / available / next-due.
+  const { data: creditList } = useAsyncData(() => listCreditSummaries());
+  const creditById = useMemo(() => {
+    const m = new Map<string, CreditStatus>();
+    for (const c of creditList ?? []) m.set(c.account.id, c.status);
+    return m;
+  }, [creditList]);
 
   const containerCount = pf?.accounts.length ?? 0;
   const assetCount = pf?.assets.length ?? 0;
@@ -60,10 +82,10 @@ export default function AccountsScreen() {
           <RefreshControl refreshing={!!loading} onRefresh={reload} tintColor={theme.colors.primary} />
         }
       >
-        <SegmentedButtons
+        <SegmentTabs
           value={segment}
-          onValueChange={(v) => setSegment(v as Segment)}
-          buttons={[
+          onChange={setSegment}
+          options={[
             { value: 'containers', label: t('accounts.containers'), icon: 'wallet' },
             { value: 'assets', label: t('accounts.assets'), icon: 'gold' },
           ]}
@@ -115,19 +137,23 @@ export default function AccountsScreen() {
         {showingContainers &&
           (containerCount > 0 ? (
             <Card list>
-              {pf!.accounts.map((a, i) => (
-                <Row
-                  key={a.id}
-                  first={i === 0}
-                  icon={a.icon ?? 'wallet'}
-                  chipColor={a.color ?? theme.colors.primary}
-                  title={a.name}
-                  subtitle={`${accountTypeLabel(a.type)}  ·  ${a.currency}`}
-                  amount={a.balance}
-                  currency={a.currency}
-                  onPress={() => router.push({ pathname: '/account-edit', params: { id: a.id } })}
-                />
-              ))}
+              {pf!.accounts.map((a, i) =>
+                a.type === 'credit' ? (
+                  <CreditRow key={a.id} first={i === 0} account={a} status={creditById.get(a.id)} />
+                ) : (
+                  <Row
+                    key={a.id}
+                    first={i === 0}
+                    icon={a.icon ?? 'wallet'}
+                    chipColor={a.color ?? theme.colors.primary}
+                    title={a.name}
+                    subtitle={`${accountTypeLabel(a.type)}  ·  ${a.currency}`}
+                    amount={a.balance}
+                    currency={a.currency}
+                    onPress={() => router.push({ pathname: '/account-edit', params: { id: a.id } })}
+                  />
+                ),
+              )}
             </Card>
           ) : (
             <EmptyState icon="wallet-outline" text={t('accounts.noContainers')} />
@@ -143,7 +169,7 @@ export default function AccountsScreen() {
                   icon={ASSET_TYPE_META[a.type].icon}
                   chipColor={ASSET_TYPE_META[a.type].color}
                   title={a.name}
-                  subtitle={`${assetTypeLabel(a.type)}${a.unit ? `  ·  ${a.quantity} ${a.unit}` : ''}`}
+                  subtitle={assetSubtitle(a)}
                   amount={a.value}
                   currency={a.currency}
                   onPress={() => router.push({ pathname: '/asset-edit', params: { id: a.id } })}
@@ -212,8 +238,81 @@ function Row({
   );
 }
 
+/** Wealth-list row for a credit pocket: available headline + owed / repay-by. */
+function CreditRow({
+  first,
+  account,
+  status,
+}: {
+  first: boolean;
+  account: AccountWithBalance;
+  status?: CreditStatus;
+}) {
+  const theme = useTheme<AppTheme>();
+  const { spacing } = theme.tokens;
+  const owed = status ? status.owed : Math.max(0, -account.balance);
+  const available = status ? status.available : (account.credit_limit ?? 0) - owed;
+  const overdue = status ? status.overdueAmount > 0.005 : false;
+  const dueAt = status?.nextDueAt ?? null;
+
+  const subtitle =
+    owed > 0.005
+      ? `${t('credit.owed')} ${money(owed, account.currency)}${
+          dueAt ? `  ·  ${t('credit.repayBy', { date: formatDate(dueAt) })}` : ''
+        }`
+      : t('credit.allPaid');
+
+  return (
+    <View>
+      {!first && <Divider inset={76} />}
+      <Pressable
+        onPress={() => router.push({ pathname: '/credit-detail', params: { id: account.id } })}
+        style={({ pressed }) => [
+          styles.row,
+          { paddingVertical: spacing.md, paddingHorizontal: spacing.lg, gap: spacing.md },
+          pressed && { backgroundColor: theme.colors.surfaceVariant },
+        ]}
+      >
+        <IconBadge icon={account.icon ?? 'credit-card-outline'} color={account.color ?? theme.semantic.negative} />
+        <View style={styles.body}>
+          <AppText role="title" numberOfLines={1}>
+            {account.name}
+          </AppText>
+          <AppText role="muted" numberOfLines={1} style={overdue ? { color: theme.semantic.negative } : null}>
+            {overdue ? `${t('credit.overdue')} · ${subtitle}` : subtitle}
+          </AppText>
+        </View>
+        <View style={styles.creditRight}>
+          <Eyebrow>{t('credit.available')}</Eyebrow>
+          <MoneyText value={available} currency={account.currency} variant="titleMedium" />
+        </View>
+      </Pressable>
+    </View>
+  );
+}
+
+/** Asset-row subtitle — bank certs show rate + maturity, others show unit. */
+function assetSubtitle(a: Asset): string {
+  if (a.type === 'bank_cert') {
+    const c = computeCert({
+      principal: a.value,
+      ratePct: a.interest_rate,
+      startsAt: a.starts_at,
+      maturesAt: a.matures_at,
+      now: Date.now(),
+    });
+    const parts = [assetTypeLabel(a.type)];
+    parts.push(c.ratePct > 0 ? t('cert.perYear', { rate: c.ratePct }) : t('cert.noInterest'));
+    if (c.matured) parts.push(t('cert.matured'));
+    else if (c.daysToMaturity != null) parts.push(t('cert.maturesInDays', { days: c.daysToMaturity }));
+    return parts.join('  ·  ');
+  }
+  return `${assetTypeLabel(a.type)}${a.unit ? `  ·  ${a.quantity} ${a.unit}` : ''}`;
+}
+
 const styles = StyleSheet.create({
   flex: { flex: 1 },
+  creditRight: { alignItems: 'flex-end', gap: 2 },
   heroFigure: { fontSize: 40, lineHeight: 46, letterSpacing: -0.5 },
   rule: { width: 48, height: 2, borderRadius: 1, marginTop: 6 },
   metaRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: 12 },
