@@ -12,6 +12,8 @@ const DEFAULT_CATEGORY_AR: Record<string, string> = {
   cat_health: 'الصحة',
   cat_entertainment: 'الترفيه',
   cat_education: 'التعليم',
+  cat_fuel: 'الوقود',
+  cat_subscriptions: 'الاشتراكات',
   cat_expense_other: 'أخرى',
   cat_salary: 'الراتب',
   cat_business: 'الأعمال',

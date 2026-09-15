@@ -12,6 +12,7 @@ const KEYS = {
   themeMode: 'theme_mode',
   lockEnabled: 'lock_enabled',
   walkthroughSeen: 'walkthrough_seen',
+  nudgesEnabled: 'nudges_enabled',
 } as const;
 
 interface SettingsState {
@@ -22,6 +23,8 @@ interface SettingsState {
   lockEnabled: boolean;
   /** True once the first-launch walkthrough has been completed or skipped. */
   walkthroughSeen: boolean;
+  /** Daily local nudge notifications (morning / afternoon / evening). */
+  nudgesEnabled: boolean;
   load: () => Promise<void>;
   setDisplayCurrency: (code: CurrencyCode) => Promise<void>;
   /** Returns true when the RTL direction changed (caller should reload). */
@@ -29,6 +32,7 @@ interface SettingsState {
   setThemeMode: (mode: ThemeMode) => Promise<void>;
   setLockEnabled: (enabled: boolean) => Promise<void>;
   completeWalkthrough: () => Promise<void>;
+  setNudgesEnabled: (enabled: boolean) => Promise<void>;
 }
 
 export const useSettings = create<SettingsState>((set) => ({
@@ -38,6 +42,7 @@ export const useSettings = create<SettingsState>((set) => ({
   themeMode: 'system',
   lockEnabled: false,
   walkthroughSeen: false,
+  nudgesEnabled: false,
 
   load: async () => {
     const s = await getAllSettings();
@@ -50,6 +55,7 @@ export const useSettings = create<SettingsState>((set) => ({
       themeMode: (s[KEYS.themeMode] as ThemeMode) || 'system',
       lockEnabled: s[KEYS.lockEnabled] === '1',
       walkthroughSeen: s[KEYS.walkthroughSeen] === '1',
+      nudgesEnabled: s[KEYS.nudgesEnabled] === '1',
     });
   },
 
@@ -78,5 +84,10 @@ export const useSettings = create<SettingsState>((set) => ({
   completeWalkthrough: async () => {
     await setSetting(KEYS.walkthroughSeen, '1');
     set({ walkthroughSeen: true });
+  },
+
+  setNudgesEnabled: async (enabled) => {
+    await setSetting(KEYS.nudgesEnabled, enabled ? '1' : '0');
+    set({ nudgesEnabled: enabled });
   },
 }));

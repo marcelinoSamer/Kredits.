@@ -1,6 +1,7 @@
 import { StyleSheet, View } from 'react-native';
 import { router } from 'expo-router';
-import { ProgressBar, Text, useTheme } from 'react-native-paper';
+import { Text, useTheme } from 'react-native-paper';
+import { DrawnBar } from '@/components/anim/DrawnBar';
 
 import { Card } from '@/components/Card';
 import { IconBadge } from '@/components/IconBadge';
@@ -46,7 +47,7 @@ export function BoxList() {
 
   return (
     <>
-      {boxes && boxes.length === 0 && <EmptyState icon="party-popper" text={t('boxes.empty')} />}
+      {boxes && boxes.length === 0 && <EmptyState icon="party-popper" text={t('boxes.empty')} actionLabel={t('boxes.justThisTime')} onAction={() => router.push('/box-edit')} />}
       {groups.map((g) => (
         <View key={g.phase} style={{ gap: spacing.sm }}>
           <Eyebrow>{t(PHASE_SECTION[g.phase])}</Eyebrow>
@@ -109,7 +110,7 @@ function BoxCard({ box, phase }: { box: EventBoxView; phase: BoxPhase }) {
         <MoneyText value={p.inBox} currency={box.currency} variant="titleMedium" />
       </View>
 
-      <ProgressBar progress={Math.min(1, barValue / 100)} color={barColor} />
+      <DrawnBar progress={Math.min(1, barValue / 100)} color={barColor} />
       <View style={styles.footRow}>
         <Text
           variant="bodySmall"

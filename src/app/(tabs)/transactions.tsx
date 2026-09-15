@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
 import { RefreshControl, SectionList, StyleSheet, View } from 'react-native';
-import { router } from 'expo-router';
-import { FAB, Searchbar, useTheme } from 'react-native-paper';
+import { Stack, router } from 'expo-router';
+import { FAB, IconButton, Searchbar, useTheme } from 'react-native-paper';
 
 import { MoneyText } from '@/components/MoneyText';
 import { Eyebrow } from '@/components/Eyebrow';
@@ -86,6 +86,7 @@ export default function TransactionsScreen() {
 
   return (
     <View style={[styles.flex, { backgroundColor: theme.colors.background }]}>
+      <Stack.Screen options={{ headerRight: () => <IconButton icon="calendar-month-outline" onPress={() => router.push('/calendar')} /> }} />
       <View style={[styles.toolbar, { paddingHorizontal: spacing.xl, paddingTop: spacing.md, gap: spacing.md }]}>
         <Searchbar
           placeholder={t('common.search')}
@@ -109,7 +110,7 @@ export default function TransactionsScreen() {
 
       {isEmpty ? (
         <View style={styles.emptyWrap}>
-          <EmptyState icon="swap-vertical" text={t('tx.noTransactions')} />
+          <EmptyState icon="swap-vertical" text={t('tx.noTransactions')} actionLabel={t('dashboard.addExpense')} onAction={() => router.push({ pathname: '/transaction-edit', params: { kind: 'expense' } })} />
         </View>
       ) : (
         <SectionList

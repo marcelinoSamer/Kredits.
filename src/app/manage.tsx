@@ -1,5 +1,5 @@
 import { Stack, router } from 'expo-router';
-import { StyleSheet, View, Pressable } from 'react-native';
+import { Platform, StyleSheet, View, Pressable } from 'react-native';
 import { useTheme } from 'react-native-paper';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 
@@ -42,6 +42,19 @@ export default function ManageScreen() {
           icon: 'account-cog-outline',
           route: '/settings',
         },
+        { title: t('dashboard.dailySpin'), description: t('more.spinDesc'), icon: 'ferris-wheel', route: '/wheel' },
+        { title: t('dashboard.closeLedger'), description: t('dashboard.closeLedgerDesc'), icon: 'book-lock-outline', route: '/month-close' },
+      ],
+    },
+    {
+      title: t('more.sectionForecast'),
+      rows: [
+        { title: t('safe.title'), description: t('more.safeDesc'), icon: 'shield-check-outline', route: '/safe-to-spend' },
+        { title: t('bills.title'), description: t('more.billsDesc'), icon: 'calendar-sync-outline', route: '/bills' },
+        { title: t('subs.title'), description: t('more.subsDesc'), icon: 'radar', route: '/subscriptions' },
+        { title: t('calendar.title'), description: t('more.calendarDesc'), icon: 'calendar-month-outline', route: '/calendar' },
+        { title: t('debt.title'), description: t('more.debtDesc'), icon: 'credit-card-clock-outline', route: '/debt-plan' },
+        { title: t('gold.title'), description: t('more.goldDesc'), icon: 'gold', route: '/gold' },
       ],
     },
     {
@@ -59,6 +72,15 @@ export default function ManageScreen() {
           icon: 'message-text-outline',
           route: '/sms',
         },
+        {
+          title: t('daily.title'),
+          description: t('more.dailyDesc'),
+          icon: 'calendar-today',
+          route: '/daily-budget',
+        },
+        ...(Platform.OS === 'ios'
+          ? [{ title: t('applepay.title'), description: t('more.applePayDesc'), icon: 'contactless-payment', route: '/applepay-setup' }]
+          : []),
       ],
     },
   ];

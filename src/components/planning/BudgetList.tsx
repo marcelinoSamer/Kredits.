@@ -1,6 +1,7 @@
 import { View, StyleSheet } from 'react-native';
 import { router } from 'expo-router';
-import { ProgressBar, useTheme } from 'react-native-paper';
+import { useTheme } from 'react-native-paper';
+import { DrawnBar } from '@/components/anim/DrawnBar';
 
 import { Card } from '@/components/Card';
 import { AppText } from '@/components/AppText';
@@ -33,7 +34,7 @@ export function BudgetList() {
   });
 
   if (!data || data.length === 0) {
-    return <EmptyState icon="chart-donut" text={t('budgets.empty')} />;
+    return <EmptyState icon="chart-donut" text={t('budgets.empty')} actionLabel={t('budgets.addBudget')} onAction={() => router.push('/budget-edit')} />;
   }
 
   return (
@@ -58,7 +59,7 @@ export function BudgetList() {
                 {Math.round(st.percent)}%
               </AppText>
             </View>
-            <ProgressBar progress={Math.min(1, st.percent / 100)} color={color} />
+            <DrawnBar progress={Math.min(1, st.percent / 100)} color={color} />
             <View style={styles.row}>
               <MoneyText value={st.spent} currency={st.budget.currency} variant="bodyMedium" />
               <AppText role="muted">/ {st.budget.limit_amount}</AppText>

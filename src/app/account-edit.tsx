@@ -36,6 +36,7 @@ export default function AccountEditScreen() {
   const [opening, setOpening] = useState('0');
   const [creditLimit, setCreditLimit] = useState('0');
   const [graceDays, setGraceDays] = useState(String(DEFAULT_GRACE_DAYS));
+  const [apr, setApr] = useState('');
   const [archived, setArchivedState] = useState(false);
 
   const isCredit = type === 'credit';
@@ -50,6 +51,7 @@ export default function AccountEditScreen() {
       setOpening(String(a.opening_balance));
       setCreditLimit(String(a.credit_limit ?? 0));
       setGraceDays(String(a.grace_days ?? DEFAULT_GRACE_DAYS));
+      setApr(a.apr != null ? String(a.apr) : '');
       setArchivedState(a.archived === 1);
     });
   }, [id]);
@@ -70,6 +72,7 @@ export default function AccountEditScreen() {
       color: meta.color,
       credit_limit: isCredit ? parseAmount(creditLimit) : null,
       grace_days: isCredit ? Math.max(1, parseInt(graceDays, 10) || DEFAULT_GRACE_DAYS) : null,
+      apr: isCredit ? parseAmount(apr) || null : null,
     };
     if (editing && id) await updateAccount(id, input);
     else await createAccount(input);
@@ -154,6 +157,14 @@ export default function AccountEditScreen() {
           <HelperText type="info" visible>
             {t('credit.graceHint')}
           </HelperText>
+          <TextInput
+            mode="outlined"
+            label={t('credit.apr')}
+            value={apr}
+            keyboardType="decimal-pad"
+            onChangeText={(v) => setApr(v.replace(/[^0-9.]/g, ''))}
+            right={<TextInput.Affix text="%" />}
+          />
         </>
       ) : (
         <AmountInput label={t('accounts.openingBalance')} value={opening} onChangeText={setOpening} currency={currency} />

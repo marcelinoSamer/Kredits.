@@ -1,6 +1,7 @@
 import { StyleSheet, View } from 'react-native';
 import { Stack, router, useLocalSearchParams } from 'expo-router';
-import { Button, ProgressBar, useTheme } from 'react-native-paper';
+import { Button, useTheme } from 'react-native-paper';
+import { DrawnBar } from '@/components/anim/DrawnBar';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 
 import { Screen } from '@/components/Screen';
@@ -73,7 +74,7 @@ export default function CreditDetailScreen() {
         <View style={[styles.rule, { backgroundColor: accent }]} />
         <AppText role="muted">{t('credit.notMine')}</AppText>
 
-        <ProgressBar
+        <DrawnBar
           progress={status.limit > 0 ? Math.min(1, status.owed / status.limit) : 0}
           color={utilColor}
           style={{ marginTop: spacing.md, height: 6, borderRadius: 3 }}

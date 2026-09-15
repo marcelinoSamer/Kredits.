@@ -49,7 +49,13 @@ export function applyLocale(locale: AppLocale): boolean {
  * placeholders ourselves so translation strings stay framework-agnostic.
  */
 export function t(key: string, params?: Record<string, string | number>): string {
-  let str = i18n.t(key);
+  // Pass params through so i18n-js interpolates in one pass. (Calling it
+  // without them first made it stamp "[missing … value]" into every string
+  // that has a placeholder.) `count` is renamed so it never triggers plural
+  // lookup on a plain string.
+  const opts: Record<string, string | number> = {};
+  if (params) for (const [k, v] of Object.entries(params)) opts[k === 'count' ? 'count_' : k] = v;
+  let str = i18n.t(key, params ? opts : undefined);
   if (params) {
     for (const [k, v] of Object.entries(params)) {
       str = str.replace(new RegExp(`{{\\s*${k}\\s*}}`, 'g'), String(v));

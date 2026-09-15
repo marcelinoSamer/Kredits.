@@ -3,6 +3,7 @@ import { StyleSheet, View } from 'react-native';
 import { Stack } from 'expo-router';
 import { Text, useTheme } from 'react-native-paper';
 import { LinearGradient } from 'expo-linear-gradient';
+import Animated, { useAnimatedStyle, useSharedValue, withSequence, withTiming } from 'react-native-reanimated';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 
 import { Screen } from '@/components/Screen';
@@ -44,6 +45,18 @@ export function EditorScaffold({
   const theme = useTheme<AppTheme>();
   const { spacing, radius, font } = theme.tokens;
 
+  // Confirm actions answer with a short gold ink flash that spreads from the stamp.
+  const ink = useSharedValue(0);
+  const inkStyle = useAnimatedStyle(() => ({
+    opacity: 1 - ink.value,
+    transform: [{ scale: 0.6 + ink.value * 0.9 }],
+  }));
+  const stamp = () => {
+    ink.value = 0;
+    ink.value = withSequence(withTiming(1, { duration: 420 }));
+    onSave();
+  };
+
   return (
     <Screen contentStyle={{ padding: spacing.lg, gap: spacing.lg }}>
       <Stack.Screen options={{ title, presentation: 'modal' }} />
@@ -78,7 +91,7 @@ export function EditorScaffold({
 
       <View style={{ gap: spacing.sm }}>
         <AnimatedPressable
-          onPress={saveDisabled ? undefined : onSave}
+          onPress={saveDisabled ? undefined : stamp}
           disabled={saveDisabled}
           scaleTo={0.97}
           style={[
@@ -86,6 +99,10 @@ export function EditorScaffold({
             { backgroundColor: saveDisabled ? theme.colors.surfaceDisabled : theme.colors.primary, borderRadius: radius.pill },
           ]}
         >
+          <Animated.View
+            pointerEvents="none"
+            style={[StyleSheet.absoluteFill, { borderRadius: radius.pill, backgroundColor: theme.semantic.gold, opacity: 0 }, inkStyle]}
+          />
           <MaterialCommunityIcons
             name="check-decagram"
             size={20}
@@ -120,7 +137,7 @@ const styles = StyleSheet.create({
   slip: { overflow: 'hidden' },
   head: { flexDirection: 'row', alignItems: 'flex-start', gap: 12 },
   headText: { flex: 1, gap: 2 },
-  stamp: { height: 54, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8 },
+  stamp: { height: 54, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, overflow: 'hidden' },
   stampText: { fontSize: 16, letterSpacing: 0.3 },
   void: { height: 40, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6 },
 });

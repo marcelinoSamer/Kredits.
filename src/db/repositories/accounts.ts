@@ -17,6 +17,7 @@ export interface AccountInput {
   /** Credit pockets only. */
   credit_limit?: number | null;
   grace_days?: number | null;
+  apr?: number | null;
 }
 
 export async function getAccount(id: string): Promise<Account | null> {
@@ -76,8 +77,8 @@ export async function createAccount(input: AccountInput): Promise<string> {
   const id = newId();
   const order = await nextSortOrder(db);
   await db.runAsync(
-    `INSERT INTO accounts (id, name, type, currency, opening_balance, icon, color, archived, sort_order, created_at, credit_limit, grace_days)
-     VALUES (?, ?, ?, ?, ?, ?, ?, 0, ?, ?, ?, ?)`,
+    `INSERT INTO accounts (id, name, type, currency, opening_balance, icon, color, archived, sort_order, created_at, credit_limit, grace_days, apr)
+     VALUES (?, ?, ?, ?, ?, ?, ?, 0, ?, ?, ?, ?, ?)`,
     [
       id,
       input.name,
@@ -90,6 +91,7 @@ export async function createAccount(input: AccountInput): Promise<string> {
       Date.now(),
       input.credit_limit ?? null,
       input.grace_days ?? null,
+      input.apr ?? null,
     ],
   );
   return id;
@@ -98,7 +100,7 @@ export async function createAccount(input: AccountInput): Promise<string> {
 export async function updateAccount(id: string, input: AccountInput): Promise<void> {
   const db = await getDb();
   await db.runAsync(
-    `UPDATE accounts SET name = ?, type = ?, currency = ?, opening_balance = ?, icon = ?, color = ?, credit_limit = ?, grace_days = ? WHERE id = ?`,
+    `UPDATE accounts SET name = ?, type = ?, currency = ?, opening_balance = ?, icon = ?, color = ?, credit_limit = ?, grace_days = ?, apr = ? WHERE id = ?`,
     [
       input.name,
       input.type,
@@ -108,6 +110,7 @@ export async function updateAccount(id: string, input: AccountInput): Promise<vo
       input.color ?? null,
       input.credit_limit ?? null,
       input.grace_days ?? null,
+      input.apr ?? null,
       id,
     ],
   );

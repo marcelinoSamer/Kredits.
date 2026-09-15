@@ -9,7 +9,8 @@ import type { CurrencyCode } from '@/money/currencies';
 // (balance goes negative = owed) that must be repaid within a grace window.
 export type AccountType = 'cash' | 'bank' | 'wallet' | 'savings' | 'box' | 'credit';
 export type TxKind = 'income' | 'expense';
-export type TxSource = 'manual' | 'sms';
+// 'auto' = recorded by the iOS "Record in Kredits" App Intent (Wallet automation).
+export type TxSource = 'manual' | 'sms' | 'auto';
 // 'bank_cert' = a bank certificate / deposit: blocked capital that may earn
 // interest until it matures.
 export type AssetType = 'gold' | 'stock' | 'crypto' | 'property' | 'bank_cert' | 'other';
@@ -32,6 +33,46 @@ export interface Account {
   credit_limit: number | null;
   /** Credit pockets only: days from a charge until repayment is due (e.g. 55). */
   grace_days: number | null;
+  /** Credit pockets only: yearly interest rate (%), for the payoff planner. */
+  apr: number | null;
+}
+
+export type Frequency = 'weekly' | 'monthly' | 'yearly';
+
+/** A repeating receipt: bill, subscription, or salary. */
+export interface RecurringRule {
+  id: string;
+  account_id: string;
+  kind: TxKind;
+  amount: number;
+  currency: CurrencyCode;
+  category_id: string | null;
+  merchant: string | null;
+  note: string | null;
+  frequency: Frequency;
+  interval: number;
+  next_due: number;
+  end_at: number | null;
+  auto_post: number; // 0 | 1
+  remind: number; // 0 | 1
+  enabled: number; // 0 | 1
+  created_at: number;
+}
+
+/** Physical gold bought by weight. */
+export interface GoldLot {
+  id: string;
+  name: string;
+  grams: number;
+  karat: number; // 24 | 21 | 18
+  price_per_gram: number;
+  making_charge: number;
+  currency: CurrencyCode;
+  bought_at: number;
+  sold_at: number | null;
+  sold_price_per_gram: number | null;
+  note: string | null;
+  created_at: number;
 }
 
 export interface Category {
