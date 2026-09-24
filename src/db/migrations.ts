@@ -1,6 +1,5 @@
 import type { SQLiteDatabase } from 'expo-sqlite';
 
-import { DEFAULT_CURRENCY } from '@/money/currencies';
 
 type Migration = (db: SQLiteDatabase) => Promise<void>;
 
@@ -191,14 +190,10 @@ const migration1: Migration = async (db) => {
 // accounts table is empty, so existing users (and re-runs) are never affected.
 export const DEFAULT_ACCOUNT_ID = 'acc_net_cash';
 
-const migration2: Migration = async (db) => {
-  const row = await db.getFirstAsync<{ n: number }>('SELECT COUNT(*) AS n FROM accounts');
-  if ((row?.n ?? 0) > 0) return;
-  await db.runAsync(
-    `INSERT INTO accounts (id, name, type, currency, opening_balance, icon, color, archived, sort_order, created_at)
-     VALUES (?, 'Net Cash', 'cash', ?, 0, 'cash', '#0F766E', 0, 0, ?)`,
-    [DEFAULT_ACCOUNT_ID, DEFAULT_CURRENCY, Date.now()],
-  );
+const migration2: Migration = async (_db) => {
+  // Fresh installs start as a clean slate: the first-run tutorial hands the
+  // user straight into creating their first Pocket, so nothing is seeded here.
+  // (Kept as a no-op so existing databases keep their version numbering.)
 };
 
 // v3: "Just this time" event boxes. Each box owns a hidden account of type
@@ -239,8 +234,69 @@ ALTER TABLE assets ADD COLUMN matures_at INTEGER;
 `);
 };
 
+// v5: forecasting + gold + debt.
+//  - recurring_rules: repeating receipts (bills, subscriptions, salary). Each
+//    rule posts real transactions when due; next_due advances per frequency.
+//  - gold_lots: physical gold bought by gram and karat with the shop's making
+//    charge; valued against the user's XAU rate.
+//  - accounts.apr: yearly interest on credit pockets for the payoff planner.
+const migration5: Migration = async (db) => {
+  await db.execAsync(`
+CREATE TABLE recurring_rules (
+  id TEXT PRIMARY KEY NOT NULL,
+  account_id TEXT NOT NULL REFERENCES accounts(id) ON DELETE CASCADE,
+  kind TEXT NOT NULL,
+  amount REAL NOT NULL,
+  currency TEXT NOT NULL,
+  category_id TEXT REFERENCES categories(id) ON DELETE SET NULL,
+  merchant TEXT,
+  note TEXT,
+  frequency TEXT NOT NULL,
+  interval INTEGER NOT NULL DEFAULT 1,
+  next_due INTEGER NOT NULL,
+  end_at INTEGER,
+  auto_post INTEGER NOT NULL DEFAULT 1,
+  remind INTEGER NOT NULL DEFAULT 1,
+  enabled INTEGER NOT NULL DEFAULT 1,
+  created_at INTEGER NOT NULL
+);
+CREATE INDEX idx_recurring_next ON recurring_rules(next_due);
+CREATE TABLE gold_lots (
+  id TEXT PRIMARY KEY NOT NULL,
+  name TEXT NOT NULL,
+  grams REAL NOT NULL,
+  karat INTEGER NOT NULL,
+  price_per_gram REAL NOT NULL,
+  making_charge REAL NOT NULL DEFAULT 0,
+  currency TEXT NOT NULL,
+  bought_at INTEGER NOT NULL,
+  sold_at INTEGER,
+  sold_price_per_gram REAL,
+  note TEXT,
+  created_at INTEGER NOT NULL
+);
+ALTER TABLE accounts ADD COLUMN apr REAL;
+`);
+};
+
+// v6: two more default expense categories the merchant classifier files into.
+const migration6: Migration = async (db) => {
+  const row = await db.getFirstAsync<{ m: number | null }>('SELECT MAX(sort_order) AS m FROM categories');
+  let order = (row?.m ?? -1) + 1;
+  for (const c of [
+    { id: 'cat_fuel', name: 'Fuel', icon: 'gas-station', color: '#F59E0B' },
+    { id: 'cat_subscriptions', name: 'Subscriptions', icon: 'autorenew', color: '#5C6BC0' },
+  ]) {
+    await db.runAsync(
+      `INSERT OR IGNORE INTO categories (id, name, kind, icon, color, parent_id, sort_order, is_default)
+       VALUES (?, ?, 'expense', ?, ?, NULL, ?, 1)`,
+      [c.id, c.name, c.icon, c.color, order++],
+    );
+  }
+};
+
 // Append future migrations here; index in the array == target user_version.
-const migrations: Migration[] = [migration1, migration2, migration3, migration4];
+const migrations: Migration[] = [migration1, migration2, migration3, migration4, migration5, migration6];
 
 export async function runMigrations(db: SQLiteDatabase): Promise<void> {
   const row = await db.getFirstAsync<{ user_version: number }>('PRAGMA user_version');

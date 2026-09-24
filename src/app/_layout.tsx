@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { router } from 'expo-router';
 import { ActivityIndicator, useColorScheme, View } from 'react-native';
 import { Stack, ThemeProvider } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
@@ -25,6 +26,10 @@ import { useBootstrap } from '@/state/bootstrap';
 import { useSettings } from '@/state/settings';
 import { LockScreen } from '@/components/LockScreen';
 import { Walkthrough, FORCE_WALKTHROUGH } from '@/components/Walkthrough';
+import { loadDemoData } from '@/demo/seed';
+import { startCaptureQueueWatcher } from '@/capture/queue';
+import * as Notifications from 'expo-notifications';
+import { bumpData } from '@/state/dataVersion';
 
 SplashScreen.preventAutoHideAsync().catch(() => {});
 
@@ -67,6 +72,24 @@ export default function RootLayout() {
     if (appReady || error) SplashScreen.hideAsync().catch(() => {});
   }, [appReady, error]);
 
+  // Silent Apple Pay capture: drain receipts the App Intent queued while we were closed.
+  useEffect(() => {
+    if (!ready) return;
+    return startCaptureQueueWatcher();
+  }, [ready]);
+
+  // A tapped notification can carry a route (e.g. the capture setup reminder).
+  useEffect(() => {
+    if (!ready) return;
+    const open = (resp: Notifications.NotificationResponse | null) => {
+      const route = resp?.notification.request.content.data?.route;
+      if (typeof route === 'string') setTimeout(() => router.push(route as never), 300);
+    };
+    Notifications.getLastNotificationResponseAsync().then(open).catch(() => {});
+    const sub = Notifications.addNotificationResponseReceivedListener(open);
+    return () => sub.remove();
+  }, [ready]);
+
   let content: React.ReactNode;
   if (error) {
     content = (
@@ -92,9 +115,12 @@ export default function RootLayout() {
   } else if ((FORCE_WALKTHROUGH || !walkthroughSeen) && !walkthroughDone) {
     content = (
       <Walkthrough
-        onDone={() => {
+        onDone={(next) => {
           completeWalkthrough().catch(() => {});
           setWalkthroughDone(true);
+          // Hand off straight into the first useful action once the tabs mount.
+          if (next === 'createPocket') setTimeout(() => router.push('/account-edit'), 350);
+          if (next === 'demo') loadDemoData().then(() => bumpData()).catch(() => {});
         }}
       />
     );

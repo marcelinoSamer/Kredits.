@@ -19,6 +19,8 @@ const TABLES = [
   'transfers',
   'budgets',
   'goals',
+  'recurring_rules',
+  'gold_lots',
   'sms_senders',
   'sms_templates',
   'sms_pending',
@@ -52,7 +54,14 @@ export interface ImportResult {
   reason?: ImportReason;
 }
 
-export async function importData(passphrase: string): Promise<ImportResult> {
+export type ImportMode = 'replace' | 'merge';
+
+/**
+ * `replace` restores the file as the whole ledger. `merge` unions it into the
+ * current ledger by row id (existing rows win) — two phones in one household
+ * can exchange backups by AirDrop and end up with the same books, no server.
+ */
+export async function importData(passphrase: string, mode: ImportMode = 'replace'): Promise<ImportResult> {
   const picked = await DocumentPicker.getDocumentAsync({ copyToCacheDirectory: true });
   if (picked.canceled || !picked.assets?.[0]) return { ok: false, reason: 'cancelled' };
 
@@ -75,9 +84,29 @@ export async function importData(passphrase: string): Promise<ImportResult> {
   }
   if (!payload?.tables) return { ok: false, reason: 'invalid' };
 
-  await restore(payload.tables);
+  if (mode === 'merge') await merge(payload.tables);
+  else await restore(payload.tables);
   bumpData();
   return { ok: true };
+}
+
+async function merge(tables: Record<string, Record<string, unknown>[]>): Promise<void> {
+  const db = await getDb();
+  await db.withTransactionAsync(async () => {
+    for (const tbl of TABLES) {
+      // Settings are device-local (lock, theme, mappings): never merge them.
+      if (tbl === 'settings' || tbl === 'sms_seen') continue;
+      for (const row of tables[tbl] ?? []) {
+        const cols = Object.keys(row);
+        if (cols.length === 0) continue;
+        const placeholders = cols.map(() => '?').join(', ');
+        await db.runAsync(
+          `INSERT OR IGNORE INTO ${tbl} (${cols.join(', ')}) VALUES (${placeholders})`,
+          cols.map((c) => row[c] as never),
+        );
+      }
+    }
+  });
 }
 
 async function restore(tables: Record<string, Record<string, unknown>[]>): Promise<void> {

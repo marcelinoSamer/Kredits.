@@ -1,5 +1,5 @@
 import { StyleSheet, View } from 'react-native';
-import { useTheme } from 'react-native-paper';
+import { Button, useTheme } from 'react-native-paper';
 
 import { AppText } from './AppText';
 import { IconBadge } from './IconBadge';
@@ -8,9 +8,12 @@ import type { AppTheme } from '@/theme';
 interface Props {
   icon: string;
   text: string;
+  /** An empty screen is an invitation: give it the next action. */
+  actionLabel?: string;
+  onAction?: () => void;
 }
 
-export function EmptyState({ icon, text }: Props) {
+export function EmptyState({ icon, text, actionLabel, onAction }: Props) {
   const theme = useTheme<AppTheme>();
   const { spacing, radius } = theme.tokens;
   return (
@@ -19,6 +22,11 @@ export function EmptyState({ icon, text }: Props) {
       <AppText role="muted" variant="bodyMedium" style={styles.text}>
         {text}
       </AppText>
+      {actionLabel && onAction ? (
+        <Button mode="contained-tonal" icon="plus" onPress={onAction}>
+          {actionLabel}
+        </Button>
+      ) : null}
     </View>
   );
 }

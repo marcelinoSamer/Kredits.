@@ -5,6 +5,7 @@ import { formatMoney } from '@/money/format';
 import type { CurrencyCode } from '@/money/currencies';
 import { getLocale } from '@/i18n';
 import type { AppTheme } from '@/theme';
+import { useCountUp, useMotionEnabled } from './anim/motion';
 
 type Variant =
   | 'displaySmall'
@@ -31,6 +32,9 @@ interface Props {
   muted?: boolean;
   /** Mark this figure as *value* — renders in brass-gold. */
   tone?: 'gold';
+  /** Roll toward new values (and up from zero on first mount when `fromZero`). */
+  animate?: boolean;
+  fromZero?: boolean;
   variant?: Variant;
   style?: StyleProp<TextStyle>;
 }
@@ -42,11 +46,15 @@ export function MoneyText({
   signed,
   muted,
   tone,
+  animate,
+  fromZero,
   variant = 'bodyLarge',
   style,
 }: Props) {
   const theme = useTheme<AppTheme>();
   const ar = getLocale() === 'ar';
+  const motion = useMotionEnabled();
+  const shown = useCountUp(value, !!animate && motion, { fromZero });
 
   let color: string = theme.colors.onSurface;
   if (tone === 'gold') {
@@ -71,7 +79,7 @@ export function MoneyText({
       variant={variant}
       style={[{ color, fontFamily, fontVariant: ['tabular-nums'] }, style]}
     >
-      {formatMoney(value, currency, { arabicDigits: ar, signed })}
+      {formatMoney(shown, currency, { arabicDigits: ar, signed })}
     </Text>
   );
 }

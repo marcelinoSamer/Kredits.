@@ -18,8 +18,11 @@ import {
   createTransaction,
   deleteTransaction,
   getTransaction,
+  merchantCategoryHistory,
   updateTransaction,
 } from '@/db/repositories/transactions';
+import { suggestCategory } from '@/rewards/merchantMemory';
+import { classifyMerchant } from '@/money/classify';
 import { bumpData } from '@/state/dataVersion';
 import type { Account, Category, TxKind } from '@/db/schema';
 
@@ -75,6 +78,21 @@ export default function TransactionEditScreen() {
       },
     );
   }, [params.id, params.boxId, params.accountId]);
+
+  // Merchant memory: once a typed merchant has been filed under the same
+  // category twice, preselect it (only while the category is still empty).
+  useEffect(() => {
+    if (editing || kind !== 'expense') return;
+    const name = merchant.trim();
+    if (name.length < 3) return;
+    const handle = setTimeout(() => {
+      merchantCategoryHistory(name).then((rows) => {
+        const id = suggestCategory(rows) ?? classifyMerchant(name);
+        if (id) setCategoryId((prev) => prev ?? id);
+      });
+    }, 350);
+    return () => clearTimeout(handle);
+  }, [merchant, editing, kind]);
 
   useEffect(() => {
     if (!params.id) return;

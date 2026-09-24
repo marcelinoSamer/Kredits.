@@ -5,6 +5,9 @@ import { FAB, useTheme } from 'react-native-paper';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 
 import { MoneyText } from '@/components/MoneyText';
+import { HeroPanel } from '@/components/HeroPanel';
+import { formatNumber } from '@/money/format';
+import { goldEquivalent } from '@/money/gold';
 import { SegmentTabs } from '@/components/SegmentTabs';
 import { Eyebrow } from '@/components/Eyebrow';
 import { AppText } from '@/components/AppText';
@@ -82,6 +85,22 @@ export default function AccountsScreen() {
           <RefreshControl refreshing={!!loading} onRefresh={reload} tintColor={theme.colors.primary} />
         }
       >
+        {pf && (
+          <HeroPanel>
+            <Eyebrow>{t('dashboard.netWorth')}</Eyebrow>
+            <MoneyText value={pf.netWorth.total} currency={pf.display} tone="gold" variant="displaySmall" animate />
+            {(() => {
+              const g = pf.netWorth.total > 0 ? goldEquivalent(pf.netWorth.total, pf.display, pf.lookup, 21) : null;
+              return (
+                <Pressable onPress={() => router.push('/fx-rates')} hitSlop={6}>
+                  <AppText role="muted" variant="bodySmall">
+                    {g ? t('dashboard.goldWeight', { grams: formatNumber(g.grams, 1), karat: g.karat }) : pf.netWorth.missing.length > 0 ? t('dashboard.missingRates') : t('dashboard.setGoldRate')}
+                  </AppText>
+                </Pressable>
+              );
+            })()}
+          </HeroPanel>
+        )}
         <SegmentTabs
           value={segment}
           onChange={setSegment}
@@ -156,7 +175,7 @@ export default function AccountsScreen() {
               )}
             </Card>
           ) : (
-            <EmptyState icon="wallet-outline" text={t('accounts.noContainers')} />
+            <EmptyState icon="wallet-outline" text={t('accounts.noContainers')} actionLabel={t('accounts.addContainer')} onAction={() => router.push('/account-edit')} />
           ))}
 
         {!showingContainers &&
@@ -177,7 +196,7 @@ export default function AccountsScreen() {
               ))}
             </Card>
           ) : (
-            <EmptyState icon="gold" text={t('accounts.noAssets')} />
+            <EmptyState icon="gold" text={t('accounts.noAssets')} actionLabel={t('accounts.addAsset')} onAction={() => router.push('/asset-edit')} />
           ))}
       </ScrollView>
 

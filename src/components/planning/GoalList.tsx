@@ -1,6 +1,7 @@
 import { View, StyleSheet } from 'react-native';
 import { router } from 'expo-router';
-import { ProgressBar, useTheme } from 'react-native-paper';
+import { useTheme } from 'react-native-paper';
+import { DrawnBar } from '@/components/anim/DrawnBar';
 
 import { Card } from '@/components/Card';
 import { AppText } from '@/components/AppText';
@@ -60,7 +61,7 @@ export function GoalList() {
   }, [display]);
 
   if (!data || data.length === 0) {
-    return <EmptyState icon="target" text={t('goals.empty')} />;
+    return <EmptyState icon="target" text={t('goals.empty')} actionLabel={t('goals.addGoal')} onAction={() => router.push('/goal-edit')} />;
   }
 
   return (
@@ -79,7 +80,7 @@ export function GoalList() {
               {Math.round(progress.percent)}%
             </AppText>
           </View>
-          <ProgressBar
+          <DrawnBar
             progress={Math.min(1, progress.percent / 100)}
             color={progress.reached ? theme.semantic.positive : theme.colors.primary}
           />

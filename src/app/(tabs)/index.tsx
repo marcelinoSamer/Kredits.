@@ -1,4 +1,7 @@
-import { useEffect } from 'react';
+// Home: one figure, one action, the latest receipts. Everything else lives one
+// tap away (Pockets tab for net worth, Manage for plans and forecasts).
+
+import { useEffect, useMemo } from 'react';
 import { Pressable, RefreshControl, ScrollView, StyleSheet, View } from 'react-native';
 import { router } from 'expo-router';
 import { Text, useTheme } from 'react-native-paper';
@@ -6,276 +9,244 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { MoneyText } from '@/components/MoneyText';
-import { Eyebrow } from '@/components/Eyebrow';
 import { AppText } from '@/components/AppText';
 import { Card } from '@/components/Card';
-import { IconBadge } from '@/components/IconBadge';
 import { Divider } from '@/components/Divider';
 import { TransactionRow } from '@/components/TransactionRow';
 import { EmptyState } from '@/components/EmptyState';
+import { DrawnBar } from '@/components/anim/DrawnBar';
+import { Reveal } from '@/components/anim/Reveal';
+import { consumeLaunchReveal } from '@/components/anim/motion';
 import { t } from '@/i18n';
-import { convert } from '@/money/fx';
+import { convert, sumInCurrency } from '@/money/fx';
+import { formatMoney } from '@/money/format';
+import { dailyBudgetStatus } from '@/money/dailyBudget';
+import { dayKey, endOfDay, startOfDay } from '@/ui/date';
+import { categorizeUnfiled, listActivityDays, sumByKindCurrency, listTransactions } from '@/db/repositories/transactions';
+import { expenseByCategory, expenseByDay } from '@/db/repositories/stats';
+import { categoryLabel } from '@/ui/labels';
 import { monthRange } from '@/ui/date';
-import { sumByKindCurrency, listTransactions } from '@/db/repositories/transactions';
+import { postDueRules } from '@/db/repositories/recurring';
+import { loadDailyBudget } from '@/state/dailyBudget';
 import { usePortfolio } from '@/state/portfolio';
-import { useAsyncData } from '@/state/dataVersion';
+import { useAsyncData, bumpData } from '@/state/dataVersion';
+import { useSettings } from '@/state/settings';
+import { useHints } from '@/state/hints';
 import { checkBudgetsAndNotify } from '@/notifications/budgets';
+import { scheduleDailyNudges } from '@/notifications/daily';
+import { scheduleBillReminders } from '@/notifications/bills';
+import { computeStreak } from '@/rewards/streak';
+import { loadRewards } from '@/rewards/store';
+import { spinGate } from '@/rewards/wheel';
+import { getCaptureStatus, scheduleCaptureReminders } from '@/capture/status';
+import { Platform } from 'react-native';
+import { Button } from 'react-native-paper';
 import type { AppTheme } from '@/theme';
 
 export default function DashboardScreen() {
   const theme = useTheme<AppTheme>();
-  const { spacing, radius } = theme.tokens;
+  const { spacing } = theme.tokens;
   const insets = useSafeAreaInsets();
   const { data: pf, loading, reload } = usePortfolio();
+  const nudgesEnabled = useSettings((s) => s.nudgesEnabled);
+  const setSpinReady = useHints((s) => s.setSpinReady);
+  const play = useMemo(() => consumeLaunchReveal(), []);
 
-  const { data: extra } = useAsyncData(async () => {
-    const range = monthRange();
-    const [sums, recent] = await Promise.all([
-      sumByKindCurrency(range.from, range.to),
-      listTransactions({ limit: 6 }),
+  const { data } = useAsyncData(async () => {
+    const now = Date.now();
+    const today = dayKey(now);
+    const daily = await loadDailyBudget();
+    // File any receipt the classifier can name before we rank the month.
+    await categorizeUnfiled().catch(() => 0);
+    const range = monthRange(now);
+    const [todaySums, recent, days, rewards, dayRows, cats] = await Promise.all([
+      sumByKindCurrency(startOfDay(now), endOfDay(now)),
+      listTransactions({ limit: 8 }),
+      listActivityDays(now - 400 * 86_400_000),
+      loadRewards(),
+      daily ? expenseByDay(daily.startDay, endOfDay(now)) : Promise.resolve([]),
+      expenseByCategory(range.from, range.to),
     ]);
-    return { sums, recent };
+    const streak = computeStreak(days, today, rewards.shields);
+    const capture = await getCaptureStatus();
+    return { todaySums, recent, daily, dayRows, cats, capture, gate: spinGate(rewards, today, streak.loggedToday) };
   });
 
-  let income = 0;
-  let expense = 0;
-  if (pf && extra) {
-    for (const s of extra.sums) {
-      const r = convert(s.total, s.currency, pf.display, pf.lookup, pf.display);
-      if (r.value == null) continue;
-      if (s.kind === 'income') income += r.value;
-      else expense += r.value;
-    }
-  }
-
-  useEffect(() => {
-    checkBudgetsAndNotify().catch(() => {});
-  }, []);
-
   const display = pf?.display ?? 'EGP';
-  const empty = pf && pf.accounts.length === 0 && pf.assets.length === 0;
-  const missing = pf?.netWorth.missing.length ?? 0;
+  const spentToday = pf && data
+    ? sumInCurrency(data.todaySums.filter((s) => s.kind === 'expense').map((s) => ({ amount: s.total, currency: s.currency })), display, pf.lookup).total
+    : 0;
+
+  const status = useMemo(() => {
+    if (!pf || !data?.daily) return null;
+    const byDay = new Map<number, number>();
+    for (const r of data.dayRows) {
+      const v = convert(r.total, r.currency, display, pf.lookup, display).value ?? 0;
+      byDay.set(r.day, (byDay.get(r.day) ?? 0) + v);
+    }
+    return dailyBudgetStatus(data.daily, byDay, dayKey(Date.now()));
+  }, [pf, data, display]);
+
+  // Ranked spending this month, unknown merchants pooled into "Other".
+  const ranked = useMemo(() => {
+    if (!pf || !data) return [];
+    const map = new Map<string, { label: string; color: string | null; icon: string | null; total: number }>();
+    for (const r of data.cats) {
+      const v = convert(r.total, r.currency, display, pf.lookup, display).value ?? 0;
+      const key = r.category_id ?? 'other';
+      const cur = map.get(key) ?? {
+        label: r.category_id ? categoryLabel({ id: r.category_id, name: r.category_name ?? '' }) : t('dashboard.other'),
+        color: r.category_color,
+        icon: r.category_icon,
+        total: 0,
+      };
+      cur.total += v;
+      map.set(key, cur);
+    }
+    const list = [...map.values()].sort((a, b) => b.total - a.total);
+    const total = list.reduce((s, x) => s + x.total, 0);
+    return list.map((x) => ({ ...x, share: total > 0 ? x.total / total : 0 }));
+  }, [pf, data, display]);
+
+  // Background upkeep: post due bills, check budgets, re-arm local reminders.
+  useEffect(() => {
+    postDueRules().then((n) => n > 0 && bumpData()).catch(() => {}).finally(() => checkBudgetsAndNotify().catch(() => {}));
+  }, []);
+  useEffect(() => {
+    scheduleBillReminders().catch(() => {});
+    if (nudgesEnabled) scheduleDailyNudges().catch(() => {});
+  }, [data, nudgesEnabled]);
+  useEffect(() => {
+    setSpinReady(data?.gate === 'ready');
+  }, [data?.gate, setSpinReady]);
+
+  // Nag until automatic capture is on (iOS only; one repeating local reminder).
+  const needsCapture = Platform.OS === 'ios' && !!data?.capture && !data.capture.setupDone && !data.capture.verifiedAt;
+  useEffect(() => {
+    if (needsCapture && !data?.capture.remindersOff) scheduleCaptureReminders().catch(() => {});
+  }, [needsCapture, data?.capture.remindersOff]);
+
+  const empty = pf && pf.accounts.length === 0;
+  const over = status ? status.left < 0 : false;
 
   return (
     <View style={[styles.flex, { backgroundColor: theme.colors.background }]}>
       <ScrollView
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ paddingTop: insets.top + spacing.lg, paddingBottom: 112, gap: spacing.xxl }}
-        refreshControl={
-          <RefreshControl refreshing={!!loading} onRefresh={reload} tintColor={theme.colors.primary} />
-        }
+        contentContainerStyle={{ paddingTop: insets.top + spacing.md, paddingBottom: 132, paddingHorizontal: spacing.xl, gap: spacing.xxl }}
+        refreshControl={<RefreshControl refreshing={!!loading} onRefresh={reload} tintColor={theme.colors.primary} />}
       >
-        {/* Vault panel — net worth as a gold figure on an engraved gold line. */}
-        <View style={{ paddingHorizontal: spacing.xl, gap: spacing.sm }}>
-          <View style={styles.topRow}>
-            <View style={styles.offlineRow}>
-              <MaterialCommunityIcons
-                name="shield-lock-outline"
-                size={13}
-                color={theme.colors.onSurfaceVariant}
-              />
-              <Eyebrow>{t('more.offlineBadge')}</Eyebrow>
-            </View>
-            <Pressable
-              onPress={() => router.push('/manage')}
-              hitSlop={10}
-              style={({ pressed }) => (pressed ? { opacity: 0.6 } : null)}
-            >
-              <MaterialCommunityIcons
-                name="cog-outline"
-                size={22}
-                color={theme.colors.onSurfaceVariant}
-              />
-            </Pressable>
-          </View>
-
-          <View style={{ gap: spacing.xs, marginTop: spacing.sm }}>
-            <Eyebrow>{t('dashboard.netWorth')}</Eyebrow>
-            <MoneyText
-              value={pf?.netWorth.total ?? 0}
-              currency={display}
-              tone="gold"
-              variant="displaySmall"
-              style={styles.heroFigure}
-            />
-            <View style={[styles.goldRule, { backgroundColor: theme.semantic.gold }]} />
-          </View>
-
-          <View style={[styles.splitRow, { marginTop: spacing.xs }]}>
-            <View style={{ gap: 2 }}>
-              <Eyebrow>{t('accounts.containers')}</Eyebrow>
-              <MoneyText value={pf?.netWorth.cash ?? 0} currency={display} variant="titleSmall" />
-            </View>
-            <View style={{ gap: 2 }}>
-              <Eyebrow>{t('accounts.assets')}</Eyebrow>
-              <MoneyText value={pf?.netWorth.assets ?? 0} currency={display} variant="titleSmall" />
-            </View>
-          </View>
-
-          {missing > 0 && (
-            <Pressable
-              onPress={() => router.push('/fx-rates')}
-              style={[
-                styles.warnPill,
-                { backgroundColor: theme.colors.surfaceVariant, borderRadius: radius.pill, marginTop: spacing.sm },
-              ]}
-            >
-              <MaterialCommunityIcons name="alert-outline" size={15} color={theme.semantic.negative} />
-              <AppText role="muted" variant="bodySmall">
-                {t('dashboard.missingRates')}
-              </AppText>
-            </Pressable>
-          )}
+        <View style={styles.topRow}>
+          <Text style={[styles.mark, { fontFamily: theme.tokens.font.serif.semibold, color: theme.colors.onSurface }]}>
+            K<Text style={{ color: theme.semantic.gold }}>.</Text>
+          </Text>
+          <Pressable onPress={() => router.push('/manage')} hitSlop={10} style={({ pressed }) => (pressed ? { opacity: 0.6 } : null)}>
+            <MaterialCommunityIcons name="cog-outline" size={24} color={theme.colors.onSurfaceVariant} />
+          </Pressable>
         </View>
 
-        {/* This month */}
-        <View style={{ paddingHorizontal: spacing.xl, gap: spacing.sm }}>
-          <Eyebrow>{t('dashboard.thisMonth')}</Eyebrow>
-          <Card style={styles.monthCard}>
-            <View style={styles.monthCol}>
-              <Eyebrow>{t('dashboard.income')}</Eyebrow>
-              <MoneyText
-                value={income}
-                currency={display}
-                variant="titleLarge"
-                style={{ color: theme.semantic.income }}
-              />
-            </View>
-            <Divider vertical style={{ marginVertical: 4 }} />
-            <View style={styles.monthCol}>
-              <Eyebrow>{t('dashboard.expenses')}</Eyebrow>
-              <MoneyText
-                value={expense}
-                currency={display}
-                variant="titleLarge"
-                style={{ color: theme.semantic.expense }}
-              />
-            </View>
-          </Card>
-        </View>
-
-        {/* Quick actions */}
-        <View style={[styles.actionRow, { paddingHorizontal: spacing.xl, gap: spacing.md }]}>
-          <ActionTile
-            icon="arrow-bottom-left"
-            tint={theme.semantic.income}
-            label={t('dashboard.addIncome')}
-            onPress={() => router.push({ pathname: '/transaction-edit', params: { kind: 'income' } })}
-          />
-          <ActionTile
-            icon="arrow-top-right"
-            tint={theme.semantic.expense}
-            label={t('dashboard.addExpense')}
-            onPress={() => router.push({ pathname: '/transaction-edit', params: { kind: 'expense' } })}
-          />
-          <ActionTile
-            icon="swap-horizontal"
-            tint={theme.colors.primary}
-            label={t('dashboard.transfer')}
-            onPress={() => router.push('/transfer')}
-          />
-        </View>
-
-        {empty && (
-          <View style={{ paddingHorizontal: spacing.xl }}>
-            <EmptyState icon="bank-plus" text={t('accounts.noContainers')} />
-          </View>
+        {needsCapture && (
+          <Reveal play={play}>
+            <Card style={{ gap: spacing.sm, borderWidth: 1, borderColor: theme.semantic.gold }}>
+              <View style={[styles.topRow, { gap: 10, justifyContent: 'flex-start' }]}>
+                <MaterialCommunityIcons name="contactless-payment" size={22} color={theme.semantic.gold} />
+                <AppText role="title">{t('applepay.nagTitle')}</AppText>
+              </View>
+              <AppText role="muted" variant="bodySmall">{t('applepay.nagBody')}</AppText>
+              <Button mode="contained" onPress={() => router.push('/applepay-setup')}>{t('applepay.nagAction')}</Button>
+            </Card>
+          </Reveal>
         )}
 
-        {/* Balances — horizontal carousel breaks the vertical card stack. */}
-        {pf && pf.accounts.length > 0 && (
-          <View style={{ gap: spacing.sm }}>
-            <Eyebrow style={{ paddingHorizontal: spacing.xl }}>{t('dashboard.balances')}</Eyebrow>
-            <ScrollView
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              contentContainerStyle={{ paddingHorizontal: spacing.xl, gap: spacing.md }}
-            >
-              {pf.accounts.map((a) => (
-                <Card
-                  key={a.id}
-                  onPress={() => router.push({ pathname: '/account-edit', params: { id: a.id } })}
-                  style={styles.balCard}
-                >
-                  <IconBadge icon={a.icon ?? 'wallet'} color={a.color ?? theme.colors.primary} size={40} />
-                  <View style={{ gap: 2 }}>
-                    <AppText role="title" numberOfLines={1}>
-                      {a.name}
-                    </AppText>
-                    <AppText role="muted">{a.currency}</AppText>
+        {empty ? (
+          <Reveal play={play}>
+            <EmptyState icon="treasure-chest" text={t('dashboard.emptyHint')} actionLabel={t('accounts.addContainer')} onAction={() => router.push('/account-edit')} />
+          </Reveal>
+        ) : (
+          <Reveal play={play}>
+            <Pressable onPress={() => router.push('/daily-budget')} style={{ gap: spacing.sm }}>
+              <AppText role="muted">{status ? (over ? t('dashboard.overToday') : t('dashboard.leftToday')) : t('dashboard.spentToday')}</AppText>
+              <MoneyText
+                value={status ? Math.abs(status.left) : spentToday}
+                currency={display}
+                variant="displaySmall"
+                animate
+                fromZero={play}
+                style={[styles.hero, { color: over ? theme.semantic.expense : theme.colors.onSurface }]}
+              />
+              {status ? (
+                <>
+                  <DrawnBar progress={status.used} color={over ? theme.semantic.expense : theme.semantic.gold} trackColor={theme.semantic.goldDim} height={4} />
+                  <AppText role="muted" variant="bodySmall">
+                    {over
+                      ? t('dashboard.overOf', { amount: formatMoney(status.allowance, display) })
+                      : t('dashboard.remainingOf', { amount: formatMoney(status.allowance, display) })}
+                  </AppText>
+                </>
+              ) : (
+                <AppText variant="bodySmall" style={{ color: theme.colors.primary }}>{t('dashboard.setDaily')}</AppText>
+              )}
+            </Pressable>
+          </Reveal>
+        )}
+
+        {ranked.length > 0 && (
+          <Reveal play={play} step={1} style={{ gap: spacing.sm }}>
+            <View style={styles.topRow}>
+              <AppText role="muted">{t('dashboard.byCategory')}</AppText>
+              <Pressable onPress={() => router.push('/(tabs)/analytics')} hitSlop={8}>
+                <AppText variant="labelMedium" style={{ color: theme.colors.primary }}>{t('dashboard.seeAll')}</AppText>
+              </Pressable>
+            </View>
+            <Card style={{ gap: spacing.md }}>
+              {ranked.slice(0, 6).map((r) => (
+                <View key={r.label} style={{ gap: 6 }}>
+                  <View style={styles.topRow}>
+                    <View style={[styles.topRow, { gap: 8 }]}>
+                      <MaterialCommunityIcons name={(r.icon ?? 'dots-horizontal') as never} size={16} color={r.color ?? theme.colors.onSurfaceVariant} />
+                      <AppText>{r.label}</AppText>
+                    </View>
+                    <View style={[styles.topRow, { gap: 8 }]}>
+                      <MoneyText value={r.total} currency={display} variant="bodySmall" muted />
+                      <Text style={[styles.pct, { fontFamily: theme.tokens.font.numeric.semibold, color: theme.colors.onSurface }]}>
+                        {`${Math.round(r.share * 100)}%`}
+                      </Text>
+                    </View>
                   </View>
-                  <MoneyText value={a.balance} currency={a.currency} variant="titleMedium" />
-                </Card>
-              ))}
-            </ScrollView>
-          </View>
-        )}
-
-        {/* Recent */}
-        {extra && extra.recent.length > 0 && (
-          <View style={{ paddingHorizontal: spacing.xl, gap: spacing.sm }}>
-            <Eyebrow>{t('dashboard.recent')}</Eyebrow>
-            <Card list>
-              {extra.recent.map((tx, i) => (
-                <View key={tx.id}>
-                  {i > 0 && <Divider inset={76} />}
-                  <TransactionRow
-                    tx={tx}
-                    onPress={() => router.push({ pathname: '/transaction-edit', params: { id: tx.id } })}
-                  />
+                  <DrawnBar progress={r.share} color={r.color ?? theme.colors.outline} height={5} />
                 </View>
               ))}
             </Card>
-          </View>
+          </Reveal>
+        )}
+
+        {data && data.recent.length > 0 && (
+          <Reveal play={play} step={2} style={{ gap: spacing.sm }}>
+            <View style={styles.topRow}>
+              <AppText role="muted">{t('dashboard.recent')}</AppText>
+              <Pressable onPress={() => router.push('/(tabs)/transactions')} hitSlop={8}>
+                <AppText variant="labelMedium" style={{ color: theme.colors.primary }}>{t('dashboard.seeAll')}</AppText>
+              </Pressable>
+            </View>
+            <Card list>
+              {data.recent.map((tx, i) => (
+                <View key={tx.id}>
+                  {i > 0 && <Divider inset={76} />}
+                  <TransactionRow tx={tx} onPress={() => router.push({ pathname: '/transaction-edit', params: { id: tx.id } })} />
+                </View>
+              ))}
+            </Card>
+          </Reveal>
         )}
       </ScrollView>
     </View>
   );
 }
 
-function ActionTile({
-  icon,
-  tint,
-  label,
-  onPress,
-}: {
-  icon: string;
-  tint: string;
-  label: string;
-  onPress: () => void;
-}) {
-  const theme = useTheme<AppTheme>();
-  const { spacing } = theme.tokens;
-  return (
-    <Card onPress={onPress} padding="none" style={styles.tile}>
-      <View style={{ alignItems: 'center', paddingVertical: spacing.md, gap: spacing.sm }}>
-        <IconBadge icon={icon} variant="soft" color={tint} size={44} iconSize={22} />
-        <Text variant="labelMedium" style={{ color: theme.colors.onSurface }}>
-          {label}
-        </Text>
-      </View>
-    </Card>
-  );
-}
-
 const styles = StyleSheet.create({
   flex: { flex: 1 },
   topRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  offlineRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
-  heroFigure: { fontSize: 40, lineHeight: 46, letterSpacing: -0.5 },
-  goldRule: { width: 48, height: 2, borderRadius: 1, marginTop: 6 },
-  splitRow: { flexDirection: 'row', gap: 32 },
-  warnPill: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    alignSelf: 'flex-start',
-    gap: 6,
-    paddingVertical: 6,
-    paddingHorizontal: 12,
-  },
-  monthCard: { flexDirection: 'row', alignItems: 'center' },
-  monthCol: { flex: 1, alignItems: 'center', gap: 4 },
-  actionRow: { flexDirection: 'row' },
-  tile: { flex: 1 },
-  balCard: { width: 170, gap: 12 },
+  mark: { fontSize: 28, lineHeight: 32, letterSpacing: -0.5 },
+  hero: { fontSize: 56, lineHeight: 62, letterSpacing: -1 },
+  pct: { fontSize: 17, minWidth: 44, textAlign: 'right', fontVariant: ['tabular-nums'] },
 });

@@ -73,3 +73,33 @@ export async function merchantTotals(
     [kind, from, to],
   );
 }
+
+export interface DaySumRow {
+  day: number;
+  currency: CurrencyCode;
+  total: number;
+}
+
+/**
+ * Expense totals per local calendar day and currency within a range.
+ * Box spending is excluded (a box carries its own budget).
+ */
+export async function expenseByDay(from: number, to: number): Promise<DaySumRow[]> {
+  const db = await getDb();
+  const rows = await db.getAllAsync<{ occurred_at: number; currency: CurrencyCode; amount: number }>(
+    `SELECT t.occurred_at, t.currency, t.amount
+     FROM transactions t JOIN accounts a ON t.account_id = a.id
+     WHERE t.kind = 'expense' AND a.type <> 'box' AND t.occurred_at >= ? AND t.occurred_at <= ?`,
+    [from, to],
+  );
+  const acc = new Map<string, DaySumRow>();
+  for (const r of rows) {
+    const d = new Date(r.occurred_at);
+    const day = new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
+    const key = `${day}|${r.currency}`;
+    const cur = acc.get(key) ?? { day, currency: r.currency, total: 0 };
+    cur.total += r.amount;
+    acc.set(key, cur);
+  }
+  return [...acc.values()];
+}

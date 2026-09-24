@@ -2,6 +2,7 @@ import { getDb } from '../client';
 import { newId } from '../id';
 import type { Transaction, TxKind, TxSource } from '../schema';
 import type { CurrencyCode } from '@/money/currencies';
+import { classifyMerchant } from '@/money/classify';
 
 export interface TransactionView extends Transaction {
   category_name: string | null;
@@ -144,4 +145,51 @@ export async function sumByKindCurrency(from: number, to: number): Promise<KindC
      GROUP BY kind, currency`,
     [from, to],
   );
+}
+
+/** Local-midnight day keys (by created_at) that have at least one receipt. */
+export async function listActivityDays(sinceTs: number): Promise<number[]> {
+  const db = await getDb();
+  const rows = await db.getAllAsync<{ created_at: number }>(
+    'SELECT created_at FROM transactions WHERE created_at >= ?',
+    [sinceTs],
+  );
+  const keys = new Set<number>();
+  for (const r of rows) {
+    const d = new Date(r.created_at);
+    keys.add(new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime());
+  }
+  return [...keys];
+}
+
+/** How often a merchant has been filed under each category (expenses). */
+export async function merchantCategoryHistory(
+  merchant: string,
+): Promise<{ category_id: string | null; uses: number }[]> {
+  const db = await getDb();
+  return db.getAllAsync<{ category_id: string | null; uses: number }>(
+    `SELECT category_id, COUNT(*) AS uses FROM transactions
+     WHERE kind = 'expense' AND LOWER(merchant) = LOWER(?)
+     GROUP BY category_id ORDER BY uses DESC`,
+    [merchant],
+  );
+}
+
+/**
+ * Files uncategorised expenses that have a merchant, using the offline
+ * classifier. Runs cheaply on launch; returns how many rows changed.
+ */
+export async function categorizeUnfiled(): Promise<number> {
+  const db = await getDb();
+  const rows = await db.getAllAsync<{ id: string; merchant: string }>(
+    "SELECT id, merchant FROM transactions WHERE kind = 'expense' AND category_id IS NULL AND merchant IS NOT NULL AND merchant <> ''",
+  );
+  let n = 0;
+  for (const r of rows) {
+    const cat = classifyMerchant(r.merchant);
+    if (!cat) continue;
+    await db.runAsync('UPDATE transactions SET category_id = ? WHERE id = ?', [cat, r.id]);
+    n++;
+  }
+  return n;
 }

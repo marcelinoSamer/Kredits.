@@ -21,7 +21,10 @@ import { t, type AppLocale } from '@/i18n';
 import { CASH_CURRENCY_CODES, currencyMeta } from '@/money/currencies';
 import { useSettings, type ThemeMode } from '@/state/settings';
 import { clearPin, setPin } from '@/security/auth';
+import { bumpData } from '@/state/dataVersion';
 import { exportData, importData } from '@/backup';
+import { eraseLedger, loadDemoData } from '@/demo/seed';
+import { cancelDailyNudges, scheduleDailyNudges } from '@/notifications/daily';
 
 export default function SettingsScreen() {
   const theme = useTheme();
@@ -31,7 +34,7 @@ export default function SettingsScreen() {
   const [pin2, setPin2] = useState('');
   const [pinError, setPinError] = useState<string | null>(null);
 
-  const [backupMode, setBackupMode] = useState<'export' | 'import' | null>(null);
+  const [backupMode, setBackupMode] = useState<'export' | 'import' | 'merge' | null>(null);
   const [passphrase, setPassphrase] = useState('');
   const [busy, setBusy] = useState(false);
 
@@ -73,6 +76,19 @@ export default function SettingsScreen() {
     setPinDialog(false);
   };
 
+  const onToggleNudges = async (value: boolean) => {
+    if (value) {
+      const ok = await scheduleDailyNudges();
+      if (!ok) {
+        Alert.alert(t('nudges.title'), t('nudges.permission'));
+        return;
+      }
+    } else {
+      await cancelDailyNudges();
+    }
+    await s.setNudgesEnabled(value);
+  };
+
   const runBackup = async () => {
     if (passphrase.length < 4) {
       Alert.alert(t('settings.backup'), t('common.required'));
@@ -84,7 +100,7 @@ export default function SettingsScreen() {
         await exportData(passphrase);
         setBackupMode(null);
       } else {
-        const res = await importData(passphrase);
+        const res = await importData(passphrase, backupMode === 'merge' ? 'merge' : 'replace');
         if (res.ok) {
           setBackupMode(null);
           Alert.alert(t('settings.backup'), t('common.done'));
@@ -148,6 +164,14 @@ export default function SettingsScreen() {
       />
 
       <Divider />
+      <List.Subheader>{t('nudges.title')}</List.Subheader>
+      <List.Item
+        title={t('nudges.toggle')}
+        description={t('nudges.toggleDesc')}
+        right={() => <Switch value={s.nudgesEnabled} onValueChange={onToggleNudges} />}
+      />
+
+      <Divider />
       <List.Subheader>{t('settings.data')}</List.Subheader>
       <List.Item title={t('fx.title')} left={() => <List.Icon icon="swap-horizontal" />} onPress={() => router.push('/fx-rates')} />
       <List.Item
@@ -159,6 +183,37 @@ export default function SettingsScreen() {
         title={t('settings.importData')}
         left={() => <List.Icon icon="import" />}
         onPress={() => { setPassphrase(''); setBackupMode('import'); }}
+      />
+      <List.Item
+        title={t('settings.mergeData')}
+        description={t('settings.mergeDesc')}
+        left={() => <List.Icon icon="account-group-outline" />}
+        onPress={() => { setPassphrase(''); setBackupMode('merge'); }}
+      />
+
+      <Divider />
+      <List.Subheader>{t('demo.section')}</List.Subheader>
+      <List.Item
+        title={t('demo.load')}
+        description={t('demo.loadDesc')}
+        left={() => <List.Icon icon="flask-outline" />}
+        onPress={() =>
+          Alert.alert(t('demo.load'), t('demo.confirm'), [
+            { text: t('common.cancel'), style: 'cancel' },
+            { text: t('demo.load'), style: 'destructive', onPress: async () => { setBusy(true); try { await loadDemoData(); bumpData(); } finally { setBusy(false); } } },
+          ])
+        }
+      />
+      <List.Item
+        title={t('demo.erase')}
+        description={t('demo.eraseDesc')}
+        left={() => <List.Icon icon="delete-sweep-outline" color={theme.colors.error} />}
+        onPress={() =>
+          Alert.alert(t('demo.erase'), t('demo.eraseConfirm'), [
+            { text: t('common.cancel'), style: 'cancel' },
+            { text: t('common.delete'), style: 'destructive', onPress: async () => { await eraseLedger(); bumpData(); } },
+          ])
+        }
       />
 
       <Divider />
@@ -208,7 +263,7 @@ export default function SettingsScreen() {
 
         <Dialog visible={backupMode !== null} onDismiss={() => setBackupMode(null)}>
           <Dialog.Title>
-            {backupMode === 'export' ? t('settings.exportData') : t('settings.importData')}
+            {backupMode === 'export' ? t('settings.exportData') : backupMode === 'merge' ? t('settings.mergeData') : t('settings.importData')}
           </Dialog.Title>
           <Dialog.Content style={{ gap: 8 }}>
             <Text variant="bodySmall" style={{ color: theme.colors.onSurfaceVariant }}>
@@ -226,7 +281,7 @@ export default function SettingsScreen() {
           <Dialog.Actions>
             <Button onPress={() => setBackupMode(null)}>{t('common.cancel')}</Button>
             <Button loading={busy} onPress={runBackup}>
-              {backupMode === 'export' ? t('settings.exportData') : t('settings.importData')}
+              {backupMode === 'export' ? t('settings.exportData') : backupMode === 'merge' ? t('settings.mergeData') : t('settings.importData')}
             </Button>
           </Dialog.Actions>
         </Dialog>

@@ -1,6 +1,7 @@
 import { StyleSheet, View, Pressable, Alert } from 'react-native';
 import { Stack, router, useLocalSearchParams } from 'expo-router';
-import { Button, ProgressBar, useTheme } from 'react-native-paper';
+import { Button, useTheme } from 'react-native-paper';
+import { DrawnBar } from '@/components/anim/DrawnBar';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 
 import { Screen } from '@/components/Screen';
@@ -130,7 +131,7 @@ export default function BoxDetailScreen() {
           {formatDate(box.starts_at)} — {formatDate(box.ends_at)}
         </AppText>
 
-        <ProgressBar
+        <DrawnBar
           progress={Math.min(1, barValue / 100)}
           color={barColor}
           style={{ marginTop: spacing.md, height: 6, borderRadius: 3 }}

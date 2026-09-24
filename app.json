@@ -37,6 +37,7 @@
       "favicon": "./assets/images/kredits-favicon.png"
     },
     "plugins": [
+      "./plugins/withNoPushEntitlement",
       "expo-router",
       [
         "expo-splash-screen",
@@ -65,7 +66,8 @@
       ],
       "expo-sharing",
       "./plugins/withReleaseSigning",
-      "./plugins/withGradleProjectName"
+      "./plugins/withGradleProjectName",
+      "./plugins/withRecordReceiptIntent"
     ],
     "experiments": {
       "typedRoutes": true,
